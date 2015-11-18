@@ -31,6 +31,8 @@
 void Gui_Init(void);
 void Gui_Deinit(void);
 
+void Gui_UpdateValues(GraphicsObj_t *GraphicsObj, uint8_t Refresh, uint8_t Pulse, uint8_t Percentage, uint8_t SpO2);
+
 
 
 #endif /* __GUI_H */

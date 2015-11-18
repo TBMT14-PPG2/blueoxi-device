@@ -26,6 +26,7 @@
 #include "comm.h"
 #include "ble.h"
 #include "power.h"
+#include "gui.h"
 
 #include <math.h>
 
