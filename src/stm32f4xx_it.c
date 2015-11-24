@@ -121,6 +121,7 @@ void EXTI15_10_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
 	uint32_t tmp1 = 0, tmp2 = 0;
+	uint8_t byte;
 
 	tmp1 = __HAL_UART_GET_FLAG(&g_Ble_UartHandle, UART_FLAG_TC);
 	tmp2 = __HAL_UART_GET_IT_SOURCE(&g_Ble_UartHandle, UART_IT_TC);
@@ -135,7 +136,8 @@ void USART6_IRQHandler(void)
 	/* UART in mode Receiver ---------------------------------------------------*/
 	if((tmp1 != RESET) && (tmp2 != RESET))
 	{
-		Ble_ProcessRx((uint16_t)((&g_Ble_UartHandle)->Instance->DR & (uint16_t)0x00FF));
+		byte = (uint16_t)((&g_Ble_UartHandle)->Instance->DR & (uint16_t)0x00FF);
+		Ble_ProcessRx(byte);
 	}
 
 	HAL_UART_IRQHandler(&g_Ble_UartHandle);

@@ -27,6 +27,7 @@
 #include "ble.h"
 #include "power.h"
 #include "gui.h"
+#include "flash.h"
 
 #include <math.h>
 

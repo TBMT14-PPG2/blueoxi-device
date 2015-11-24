@@ -203,6 +203,7 @@ int main(void)
 
 	/* USER CODE BEGIN 2 */
 
+	Power_Init();
 
 	uint32_t i, j, count = 0, len;
 	uint8_t str[32];
@@ -210,7 +211,29 @@ int main(void)
 
 	GraphicsObj_t graphObj;
 	Graphics_Init(&graphObj);
-	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__BLACK);
+	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__WHITE);
+
+
+	s_POWER__LCD_EN_SET();
+	s_POWER__BLE_MEMS_EN_SET();
+	s_POWER__WIFI_EN_RESET();
+	s_POWER__GPS_EN_RESET();
+	s_POWER__PPG_EN_SET();
+
+
+
+
+
+	flash_info_t flashInfo;
+	Flash_Init();
+	Flash_ReadInfo(&flashInfo);
+
+	//Flash_Command(0x55);
+	//Flash_Command(0xAA);
+
+
+
+
 	SharpLcd_Init();
 	SharpLcd_PowerOn();
 
@@ -218,8 +241,10 @@ int main(void)
 	SharpLcd_Clear();
 
 
-
-
+	Graphics_DrawBitmap(&graphObj, 22, 23, image, 100, 122, s_GRAPHICS_COLOR__BLACK);
+	Graphics_DrawString(&graphObj, 10, 10, "Hello World!", s_GRAPHICS_COLOR__BLACK);
+	SharpLcd_DisplayBuffer(graphObj.pBuf);
+	HAL_Delay(1000);
 
 	SharpLcd_PowerOff();
 
@@ -227,14 +252,14 @@ int main(void)
 
 	// TEST MOTOR
 	// ------------------------------------------------------------------
-//	Motor_Init();
-//	for(i = 0; i < 10; i++)
-//	{
-//		s_MOTOR__DRIVE_SET();
-//		HAL_Delay(500);
-//		s_MOTOR__DRIVE_RESET();
-//		HAL_Delay(500);
-//	}
+	//	Motor_Init();
+	//	for(i = 0; i < 10; i++)
+	//	{
+	//		s_MOTOR__DRIVE_SET();
+	//		HAL_Delay(500);
+	//		s_MOTOR__DRIVE_RESET();
+	//		HAL_Delay(500);
+	//	}
 	// ------------------------------------------------------------------
 
 
@@ -256,33 +281,54 @@ int main(void)
 
 	Ble_Init();
 
-	count = 0;
-	len = sprintf(str, "%d\n", (int)count);
-	HAL_UART_Transmit_IT(&g_Ble_UartHandle, (uint8_t*)str, len);
+	uint8_t packet[5];
+	packet[0] = 0xA5;
+	packet[1] = 0;
+	packet[2] = 0;
+	packet[3] = 0;
+	packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
 
-	HAL_Delay(3000);
+	count = 0;
+	HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
+
+
 
 	while (1)
 	{
 
-		HAL_Delay(500);
-//		GPIOA->BSRR = GPIO_PIN_5;
-//		HAL_Delay(100);
-//		GPIOA->BSRR = GPIO_PIN_5 << 16;
+		//		HAL_Delay(500);
+		//		GPIOA->BSRR = GPIO_PIN_5;
+		//		HAL_Delay(100);
+		//		GPIOA->BSRR = GPIO_PIN_5 << 16;
 
 		// BLE Send
-//		if(g_Ble_UartTxReady == 1) {
-//			g_Ble_UartTxReady = 0;
-//			len = sprintf(str, "%d\n", (int)count);
-//			HAL_UART_Transmit_IT(&g_Ble_UartHandle, (uint8_t*)str, len);
-//			count = (count+1) % 1000;
-//		}
+		//		if(g_Ble_UartTxReady == 1) {
+		//			g_Ble_UartTxReady = 0;
+		//			len = sprintf(str, "%d\n", (int)count);
+		//			HAL_UART_Transmit_IT(&g_Ble_UartHandle, (uint8_t*)str, len);
+		//			count = (count+1) % 1000;
+		//		}
+
+		HAL_Delay(1000);
+
+
+		// BLE Send
+		if(g_Ble_UartTxReady == 1) {
+			g_Ble_UartTxReady = 0;
+
+			packet[1] = 0;
+			packet[2] = count;
+			packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
+
+			HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
+			count = (count+1) % 100;
+		}
 
 		Ble_Process();
 
-		len = sprintf(str, "%d\n", (int)count);
-		CDC_Transmit_FS(str, len);
-		count = (count+1) % 1000;
+		//len = sprintf(str, "%d\n", (int)count);
+		//CDC_Transmit_FS(str, len);
+		//count = (count+1) % 1000;
 
 		//WS2812B_SendBit(1);
 
