@@ -1,8 +1,8 @@
 
-    unsigned int AC_red=0;
-    unsigned int DC_red=0;
-    unsigned int AC_IR=0;
-    unsigned int DC_IR=0;
+    float AC_red=0;
+    float DC_red=0;
+    float AC_IR=0;
+    float DC_IR=0;
     float alpha;
     float beta;
     float unfiltered[35];
@@ -12,14 +12,15 @@
     float min_red;
     float max_IR;
     float min_IR;
-    int Saturation;
+    float Saturation;
     int k=150;
     float lastpeaktime=0;
     float five_pulses [5];
-    int pulse=0;
-    int temppulse=0;
-    int percentage=0;
+    float pulse=0;
+    float temppulse=0;
+    float percentage=0;
     int maxpulse=195;
+    float R;=1
 
 
 function peakfound(int time)
@@ -33,7 +34,6 @@ function peakfound(int time)
     }
     five_pulses[5]=60/(time-lastpeaktime);
     pulse=(temppulse+five_pulses[5])/5;
-    pulsevector[peaksfound]=pulse;
     lastpeaktime=time;
     percentage=pulse/maxpulse;
     calcSat()
