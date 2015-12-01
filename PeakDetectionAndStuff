@@ -87,7 +87,7 @@ function calcSat(int peaksfound)
 }
 
 
-// Peak detection alternative
+// Peak detection alternative, faster?
 
 function findpeak()
 {
@@ -96,7 +96,7 @@ function findpeak()
         X=0;
             for(i=0;i<k;i++)
                 {
-                    if (CalcVector[i]>CalcVector[k])
+                    if (CalcVector[k-1-i]>CalcVector[k])
                     {
                         break
                     }
