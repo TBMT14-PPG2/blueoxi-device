@@ -53,11 +53,11 @@ function NewValue(float FilteredValue)
             Y=0;
             for(i=0;i<=k;i++)
                 {
-                    if (calcvector[count-2*k+i]>calcvector[count-k])
+                    if (calcvector[i]>calcvector[k])
                     {
                         break
                     }
-                    else if (calcvector[count-k+i]>calcvector[count-k])
+                    else if (calcvector[k+i]>calcvector[k])
                     {
                         break
                     }
