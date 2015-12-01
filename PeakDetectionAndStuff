@@ -21,29 +21,28 @@
     int percentage=0;
     int maxpulse=195;
 
-function peakfound()
+
+function peakfound(int time)
 {
-    peaksfound=peaksfound+1;
+   
     temppulse=0;
     for(i=0;i<5;i++)
     {
         five_pulses[i]=five_pulses[i+1];
         temppulse=temppulse+five_pulses[i];
     }
-    five_pulses[5]=60/(time[count-k]-lastpeaktime);
+    five_pulses[5]=60/(time-lastpeaktime);
     pulse=(temppulse+five_pulses[5])/5;
     pulsevector[peaksfound]=pulse;
-    lastpeaktime=time[count-k];
-    ptp_time[peaksfound]=lastpeaktime;
+    lastpeaktime=time;
     percentage=pulse/maxpulse;
-    percentagevector[peaksfound]=percentage;
-    peakvector[peaksfound-1]=count;
+    calcSat()
 }
 
 
 function NewValue(float X)
 {
-        //shift calcvector to and add new filtered value
+        //shift calcvector and add new filtered value
         memmove(TempVect,calcvector+1,1300);
         memmove(calcvector,TempVect,1300);
         calcvector[2*k]=FilteredValue;
@@ -54,11 +53,11 @@ function NewValue(float X)
             Y=0;
             for(i=0;i<=k;i++)
                 {
-                    if (filtered[count-2*k+i]>filtered[count-k])
+                    if (calcvector[count-2*k+i]>calcvector[count-k])
                     {
                         break
                     }
-                    else if (filtered[count-k+i]>filtered[count-k])
+                    else if (calcvector[count-k+i]>calcvector[count-k])
                     {
                         break
                     }
@@ -69,11 +68,11 @@ function NewValue(float X)
                 }
                 if (Y==k)
                 {
-                    peakfound()
+                    peakfound(time)
                 }
 }
 
-function calcSat(int peaksfound)
+function calcSat()
 {
     max_red=0;
     min_red=0;
@@ -99,7 +98,6 @@ function calcSat(int peaksfound)
                     min_IR=IRSig[count-500+i];
                 }
             }
-            lastR=R
             AC_red=max_red-min_red;
             DC_red=max_red;
             AC_IR=max_IR-min_IR;
