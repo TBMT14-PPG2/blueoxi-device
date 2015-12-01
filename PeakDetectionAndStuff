@@ -79,9 +79,9 @@ function calcSat(int peaksfound)
             }
             lastR=R
             AC_red=max_red-min_red;
-            DC_red=min_red;
+            DC_red=max_red;
             AC_IR=max_IR-min_IR;
-            DC_IR=min_IR;
+            DC_IR=max_IR;
             R=0.8*lastR+0.2*(AC_red/DC_red)/(AC_IR/DC_IR);
             Saturation=alpha*R+beta;
 }
