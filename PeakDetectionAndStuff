@@ -1,80 +1,102 @@
-            
-            //   Filtering
-            
-            for(i=0,i<35,i++)
-            {
-                filtsum=filtsum+signal[count-35+i]*filter[i];
-            }
-            filtered[count]=2^16-filtsum; //count=humber of samples in datavector
+
+    unsigned int AC_red=0;
+    unsigned int DC_red=0;
+    unsigned int AC_IR=0;
+    unsigned int DC_IR=0;
+    float alpha;
+    float beta;
+    float unfiltered[35];
+    float TempVect[35];
+    float CalcVector[2*k+1];
+    float max_red;
+    float min_red;
+    float max_IR;
+    float min_IR;
+    int Saturation;
+    int k=150;
+    float lastpeaktime=0;
+    float five_pulses [5];
+    int pulse=0;
+    int temppulse=0;
+    int percentage=0;
+    int maxpulse=195;
+
+function peakfound()
+{
+    peaksfound=peaksfound+1;
+    temppulse=0;
+    for(i=0;i<5;i++)
+    {
+        five_pulses[i]=five_pulses[i+1];
+        temppulse=temppulse+five_pulses[i];
+    }
+    five_pulses[5]=60/(time[count-k]-lastpeaktime);
+    pulse=(temppulse+five_pulses[5])/5;
+    pulsevector[peaksfound]=pulse;
+    lastpeaktime=time[count-k];
+    ptp_time[peaksfound]=lastpeaktime;
+    percentage=pulse/maxpulse;
+    percentagevector[peaksfound]=percentage;
+    peakvector[peaksfound-1]=count;
+}
+
+
+function NewValue(float X)
+{
+        //shift calcvector to and add new filtered value
+        memmove(TempVect,calcvector+1,1300);
+        memmove(calcvector,TempVect,1300);
+        calcvector[2*k]=FilteredValue;
+
+
             time=time+1/500;
             
-            
-            
-            
-            
-            
-            //   Peakdetection
-            
-            CalcVector=2*k+1 latest samples
-            max1=0;
-            max2=0;
-            //Look for max k samples before and after sample of intererest; Calcvector[k]
-            for(i=0;i<k;i++)
-            {
-                if (CalcVector[i]>max1)
+            Y=0;
+            for(i=0;i<=k;i++)
                 {
-                    max1=CalcVector[i];
+                    if (filtered[count-2*k+i]>filtered[count-k])
+                    {
+                        break
+                    }
+                    else if (filtered[count-k+i]>filtered[count-k])
+                    {
+                        break
+                    }
+                    else
+                    {
+                     Y=i;
+                    }
                 }
-                if (CalcVectorfiltered[k+i+1]>max2)
+                if (Y==k)
                 {
-                    max2=CalcVector[k+i+1];
+                    peakfound()
                 }
-            }
+}
 
-            if(CalcVector[k]>=max1 &&
-               CalcVector[k]>=max2 &&
-               time>lastpeaktime+delay)
-            {
-                temppulse=0;
-                for(i=0;i<5;i++)
-                {
-                    five_pulses[i]=five_pulses[i+1];
-                    temppulse=temppulse+five_pulses[i];
-                }
-                five_pulses[5]=60/(time-lastpeaktime);
-                pulse=(temppulse+five_pulses[5])/5;
-                lastpeaktime=time;
-                percentage=pulse/maxpulse;
-                calcSat()
-            }
-            
-//   Saturation            
-            
 function calcSat(int peaksfound)
 {
     max_red=0;
     min_red=0;
     max_IR=0;
     min_IR=0;
-    // redSig and IRSig raw signal 400 latest samples
 
-    for(i=0;i<400;i++)
+    for(i=0;i<=400;i++)
             {
-                if (redSig[i]>max_red)
+                if (redSig[count-500+i]>max_red)
                 {
-                    max_red=redSig[i];
+                    max_red=redSig[count-500+i];
                 }
-                else if (redSig[i]<min_red)
+                else if (redSig[count-500+i]<min_red)
                 {
-                    min_red=redSig[i];
+                    min_red=redSig[count-500+i];
                 }
-                if (IRSig[i]>max_IR)
+                if (IRSig[count-500+i]>max_IR)
                 {
-                    max_IR=IRSig[i];
+                    max_IR=IRSig[count-500+i];
                 }
-                else if (IRSig[i]<min_IR)
+                else if (IRSig[count-500+i]<min_IR)
                 {
-                    min_IR=IRSig[i];
+                    min_IR=IRSig[count-500+i];
                 }
             }
             lastR=R
@@ -82,54 +104,6 @@ function calcSat(int peaksfound)
             DC_red=max_red;
             AC_IR=max_IR-min_IR;
             DC_IR=max_IR;
-            R=0.8*lastR+0.2*(AC_red/DC_red)/(AC_IR/DC_IR);
+            R=0.8*R+0.2*(AC_red/DC_red)/(AC_IR/DC_IR);
             Saturation=alpha*R+beta;
 }
-
-
-// Peak detection alternative, faster?
-
-function findpeak()
-{
-    if (time>lastpeaktime+delay)
-    {
-        X=0;
-            for(i=0;i<k;i++)
-                {
-                    if (CalcVector[k-1-i]>CalcVector[k])
-                    {
-                        break
-                    }
-                    else if (CalcVector[k+1+i]>CalcVector[k])
-                    {
-                        break
-                    }
-                    else
-                    {
-                     X=i;
-                    }
-                }
-                if (X==k-1)
-                {
-                    peakfound()
-                }
-    }
-}
-
-function peakfound()
-{
-  temppulse=0;
-  for(i=0;i<5;i++)
-  {
-        five_pulses[i]=five_pulses[i+1];
-        temppulse=temppulse+five_pulses[i];
-  }
-  five_pulses[5]=60/(time-lastpeaktime);
-  pulse=(temppulse+five_pulses[5])/5;
-  lastpeaktime=time;
-  percentage=pulse/maxpulse;
-  calcSat()
-}
-
-
-
