@@ -40,7 +40,7 @@ function peakfound(int time)
 }
 
 
-function NewValue(float X)
+function NewValue(float FilteredValue)
 {
         //shift calcvector and add new filtered value
         memmove(TempVect,calcvector+1,1300);
