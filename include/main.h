@@ -12,9 +12,12 @@
 #define __MAIN_H
 
 /* -- Includes -- */
+#include <math.h>
+#include "arm_math.h"
 #include "stm32f4xx_hal.h"
 #include "usb_device.h"
 #include "gpio.h"
+
 
 #include "utilities.h"
 #include "sharp.h"
@@ -28,8 +31,9 @@
 #include "power.h"
 #include "gui.h"
 #include "flash.h"
-
-#include <math.h>
+#include "afe44xx.h"
+#include "ppg.h"
+#include "wifi.h"
 
 
 /* -- Defines -- */

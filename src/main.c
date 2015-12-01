@@ -54,7 +54,7 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN 0 */
 
-const uint8_t image[13][122] =
+/*const uint8_t image[13][122] =
 {
 		0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xf0,
 		0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xf0,
@@ -178,7 +178,7 @@ const uint8_t image[13][122] =
 		0xff,0xe0,0x3,0xcf,0x8,0x38,0x71,0xc0,0xf,0x1e,0x1c,0x7f,0xf0,
 		0xff,0xe0,0x7,0xcf,0x80,0x7c,0x3,0xe0,0x1e,0x1f,0x1c,0x7f,0xf0,
 		0xff,0xff,0xf,0xff,0xc1,0xff,0xf,0xf8,0x3f,0xff,0xff,0xff,0xf0
-};
+};*/
 
 /* USER CODE END 0 */
 
@@ -199,54 +199,124 @@ int main(void)
 
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
-	MX_USB_DEVICE_Init();
+	//MX_USB_DEVICE_Init();
+
+
+
+	//while(1);
+
+	Wifi_Init();
+	//Wifi_InitExt();
 
 	/* USER CODE BEGIN 2 */
+
 
 	Power_Init();
 
 	uint32_t i, j, count = 0, len;
-	uint8_t str[32];
+	uint8_t str[64];
 	uint32_t val;
 
-	GraphicsObj_t graphObj;
-	Graphics_Init(&graphObj);
-	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__WHITE);
+	//	GraphicsObj_t graphObj;
+	//	Graphics_Init(&graphObj);
+	//	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__WHITE);
 
 
-	s_POWER__LCD_EN_SET();
+	s_POWER__LCD_EN_RESET();
 	s_POWER__BLE_MEMS_EN_SET();
 	s_POWER__WIFI_EN_RESET();
 	s_POWER__GPS_EN_RESET();
 	s_POWER__PPG_EN_SET();
 
 
+	// LED TEST
+	// ------------------------------------------------------------------
+	WS2812B_Init();
+	WS2812B_SendColor(0,0,128);
 
-
-
-	flash_info_t flashInfo;
+	/*
+	uint8_t flashData[256];
+	FlashInfo_t flashInfo;
 	Flash_Init();
-	Flash_ReadInfo(&flashInfo);
+	//Flash_ReadInfo(&flashInfo);
+
+	// Erase
+	//Flash_EraseSector(16);
+
+	Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
+
+	for(i = 0; i < 256; i++) {
+		flashData[i] = i;
+	}
+
+	Flash_Program(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
+
+	memset(flashData, 0, 256);
+
+	Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
+
 
 	//Flash_Command(0x55);
 	//Flash_Command(0xAA);
+	 */
+
+	uint32_t temp = 0;
+
+
+	// AFE44XX Test --------------------------------------------------
+	Afe44xx_ConfigHw();
+	HAL_Delay(500);
+
+	// Testing
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__LED2STC, 0x0A5A);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+	temp = Afe44xx_ReadRegister(s_AFE44XX__LED2STC);
+
+	if(temp == 0x0A5A) {
+		WS2812B_SendColor(0,128,0);
+	} else {
+		WS2812B_SendColor(128,0,0);
+	}
+
+	Afe44xx_Init();
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// Turn Off LEDs
+	temp = Afe44xx_ReadRegister(s_AFE44XX__LEDCNTRL);
+	temp &= ~(0x00FFFF);
+	temp |= 0x001414;
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__LEDCNTRL, temp);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// Set Gain
+	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
+	temp &= ~(0x000007);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | 3);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// ---------------------------------------------------------------
 
 
 
 
-	SharpLcd_Init();
-	SharpLcd_PowerOn();
-
-	SharpLcd_Clear();
-	SharpLcd_Clear();
 
 
-	Graphics_DrawBitmap(&graphObj, 22, 23, image, 100, 122, s_GRAPHICS_COLOR__BLACK);
-	Graphics_DrawString(&graphObj, 10, 10, "Hello World!", s_GRAPHICS_COLOR__BLACK);
-	SharpLcd_DisplayBuffer(graphObj.pBuf);
-	HAL_Delay(1000);
-
-	SharpLcd_PowerOff();
+	//	SharpLcd_Init();
+	//	SharpLcd_PowerOn();
+	//
+	//	SharpLcd_Clear();
+	//	SharpLcd_Clear();
+	//
+	//
+	//	Graphics_DrawBitmap(&graphObj, 22, 23, image, 100, 122, s_GRAPHICS_COLOR__BLACK);
+	//	Graphics_DrawString(&graphObj, 10, 10, "Hello World!", s_GRAPHICS_COLOR__BLACK);
+	//	SharpLcd_DisplayBuffer(graphObj.pBuf);
+	//	HAL_Delay(1000);
+	//
+	//	SharpLcd_PowerOff();
 
 
 
@@ -263,10 +333,6 @@ int main(void)
 	// ------------------------------------------------------------------
 
 
-	// LED TEST
-	// ------------------------------------------------------------------
-	WS2812B_Init();
-
 	// BUTTON TEST
 	// ------------------------------------------------------------------
 	Buttons_Init();
@@ -279,7 +345,7 @@ int main(void)
 
 
 
-	Ble_Init();
+	/*Ble_Init();
 
 	uint8_t packet[5];
 	packet[0] = 0xA5;
@@ -289,12 +355,140 @@ int main(void)
 	packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
 
 	count = 0;
-	HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
+	HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);*/
 
 
 
+	HAL_Delay(1000);
+//	len = sprintf(str, "+++");
+//	HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+//
+//	HAL_Delay(1000);
+//	len = sprintf(str, s_WIFI__CONFIG_AT);
+//	HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+
+
+	uint8_t wifi_state = 2;
+
+
+
+	//	HAL_Delay(3000);
+	//
+	uint32_t final2, final1;
+	uint16_t data;
+
+	//	Comm_Init();
+
+	count = 0;
+
+	Wifi_TxInit();
+
+	WS2812B_SendColor(0,0,128);
+
+	// Connect
+	while(Wifi_ProcessConnect())
+	{
+		Wifi_Process();
+	}
+
+	WS2812B_SendColor(0,128,128);
 	while (1)
 	{
+
+		// Check if ADC ready
+		//		if(g_Afe44xx_AdcRdy == 1 && g_Buttons_Event == 1)
+		//		{
+		//
+		//			g_Afe44xx_AdcRdy = 0;
+		//
+		//			final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+		//			final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+		//
+		//			data = (final1>>8)&0xFFFF;
+		//			Comm_TxData((uint8_t*)&data, sizeof(data));
+		//			data = (final2>>8)&0xFFFF;
+		//			Comm_TxData((uint8_t*)&data, sizeof(data));
+		//		}
+
+
+		// Check if ADC ready
+		if(g_Afe44xx_AdcRdy == 1 && g_Buttons_Event == 1)
+		{
+
+			g_Afe44xx_AdcRdy = 0;
+
+			final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+			final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+			data = (final1>>8)&0xFFFF;
+			Wifi_TxData((uint8_t*)&data, sizeof(data));
+			data = (final2>>8)&0xFFFF;
+			Wifi_TxData((uint8_t*)&data, sizeof(data));
+		}
+
+
+
+
+		// WiFi Send
+		/*if(g_Wifi_UartTxReady == 1 && (
+				g_Wifi_AtAnswer == s_WIFI_AT__OK ||
+				g_Wifi_AtAnswer == s_WIFI_AT__CONNECTED ||
+				g_Wifi_AtAnswer == s_WIFI_AT__WAITING_DATA)) {
+
+			g_Wifi_UartTxReady = 0;
+			g_Wifi_AtAnswer = s_WIFI_AT__NONE;
+			HAL_Delay(500);
+
+			switch(wifi_state)
+			{
+			case 2 :
+				if(g_Wifi_Event != s_WIFI_EVENT__STATION_CONNECTED) {
+					HAL_Delay(1000);
+					g_Wifi_Event = s_WIFI_EVENT__NONE;
+					len = sprintf(str, s_WIFI__CONFIG_CWLIF);
+					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+				}
+				else {
+					WS2812B_SendColor(0,128,128);
+					len = sprintf(str, s_WIFI__CONFIG_CIPMODE);
+					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+					wifi_state++;
+				}
+				break;
+			case 3 :
+				if(g_Buttons_Event == 1) {
+					g_Buttons_Event = 0;
+					len = sprintf(str, s_WIFI__CONFIG_CIPSTART);
+					wifi_state++;
+					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+				}
+				break;
+			case 4 :
+				len = sprintf(str, s_WIFI__CONFIG_CIPSEND);
+				wifi_state++;
+				HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
+				break;
+			default :
+				break;
+			}
+		}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		//		HAL_Delay(500);
 		//		GPIOA->BSRR = GPIO_PIN_5;
@@ -309,22 +503,24 @@ int main(void)
 		//			count = (count+1) % 1000;
 		//		}
 
-		HAL_Delay(1000);
-
+		//		HAL_Delay(10);
+		//		if(g_Buttons_Event == 1) {
+		//			Comm_TxPacket();
+		//		}
 
 		// BLE Send
-		if(g_Ble_UartTxReady == 1) {
-			g_Ble_UartTxReady = 0;
-
-			packet[1] = 0;
-			packet[2] = count;
-			packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
-
-			HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
-			count = (count+1) % 100;
-		}
-
-		Ble_Process();
+		//		if(g_Ble_UartTxReady == 1) {
+		//			g_Ble_UartTxReady = 0;
+		//
+		//			packet[1] = 0;
+		//			packet[2] = count;
+		//			packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
+		//
+		//			HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
+		//			count = (count+1) % 100;
+		//		}
+		//
+		//		Ble_Process();
 
 		//len = sprintf(str, "%d\n", (int)count);
 		//CDC_Transmit_FS(str, len);

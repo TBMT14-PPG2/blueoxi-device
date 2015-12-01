@@ -1,6 +1,6 @@
 /**
  * @file	flash.c
- * @author  Eriks Zaharans
+ * @author  Eriks & Janis Zaharans
  * @date    24 Nov 2015
  *
  * @section DESCRIPTION
@@ -34,7 +34,7 @@ void Flash_Init(void)
 	// Configure NSS
 	GPIO_InitStruct.Pin = GPIO_PIN_12;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -76,11 +76,11 @@ void Flash_Deinit(void)
 
 void Flash_Command(uint8_t Cmd)
 {
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	HAL_SPI_Transmit(&g_Flash_SpiHandle, &Cmd, 1, 100);
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 
 
@@ -88,21 +88,22 @@ void Flash_WaitBusy(void)
 {
 	uint8_t cmd, data;
 
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	cmd = s_FLASH__CMD_RD_STATUS_REG1;
 
 	HAL_SPI_Transmit(&g_Flash_SpiHandle, &cmd, 1, 1000);
+	HAL_SPI_Receive(&g_Flash_SpiHandle, &data, 1, 1000);
 	while(data & s_FLASH__STATUS_REG1_BUSY)
 	{
 		HAL_SPI_Receive(&g_Flash_SpiHandle, &data, 1, 1000);
 	}
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 
 
-void Flash_Program(uint32_t Addr, uint8_t *Data, uint8_t Size)
+void Flash_Program(uint32_t Addr, uint8_t *Data, uint16_t Size)
 {
 	uint8_t cmd[4];
 	uint8_t i;
@@ -113,7 +114,7 @@ void Flash_Program(uint32_t Addr, uint8_t *Data, uint8_t Size)
 	// Enable write
 	Flash_Command(s_FLASH__CMD_WR_ENABLE);
 
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	// Prepare command
 	cmd[0] = s_FLASH__CMD_PAGE_PROGRAM;
@@ -127,11 +128,11 @@ void Flash_Program(uint32_t Addr, uint8_t *Data, uint8_t Size)
 	// Send data
 	HAL_SPI_Transmit(&g_Flash_SpiHandle, Data, Size, 1000);
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 
 
-void Flash_Read(uint32_t Addr, uint8_t *Data, uint8_t Size)
+void Flash_Read(uint32_t Addr, uint8_t *Data, uint16_t Size)
 {
 	uint8_t cmd[4];
 	uint8_t i;
@@ -139,7 +140,7 @@ void Flash_Read(uint32_t Addr, uint8_t *Data, uint8_t Size)
 	//Check if Erase/Program in progress
 	Flash_WaitBusy();
 
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	// Prepare command
 	cmd[0] = s_FLASH__CMD_RD_DATA;
@@ -153,7 +154,7 @@ void Flash_Read(uint32_t Addr, uint8_t *Data, uint8_t Size)
 	// Read Data
 	HAL_SPI_Receive(&g_Flash_SpiHandle, Data, Size, 1000);
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 
 
@@ -168,7 +169,7 @@ void Flash_EraseSector(uint16_t Sector)
 	// Enable write
 	Flash_Command(s_FLASH__CMD_WR_ENABLE);
 
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	if(Sector < 16) {	// 4 kB sector
 		addr = Sector << 12;
@@ -188,7 +189,7 @@ void Flash_EraseSector(uint16_t Sector)
 	// Send command
 	HAL_SPI_Transmit(&g_Flash_SpiHandle, cmd, 4, 1000);
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 
 void Flash_EraseChip(void)
@@ -208,7 +209,7 @@ void Flash_ReadInfo(FlashInfo_t *Info)
 	uint8_t data[2];
 
 	// Read Manufacturer ID and Device ID
-	s_FLASH__NSS_SET();
+	s_FLASH__SELECT();
 
 	cmd[0] = s_FLASH__CMD_MANUF_DEV_ID;
 	cmd[1] = 0;
@@ -221,6 +222,6 @@ void Flash_ReadInfo(FlashInfo_t *Info)
 	Info->manufacturer_id = data[0];
 	Info->dev_id = data[1];
 
-	s_FLASH__NSS_RESET();
+	s_FLASH__DESELECT();
 }
 

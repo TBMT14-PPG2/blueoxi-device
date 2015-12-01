@@ -91,6 +91,8 @@ void EXTI0_IRQHandler(void)
 {
 	WS2812B_SendColor(128,0,0);
 	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN1);
+
+	g_Buttons_Event = 1;
 }
 
 /**
@@ -105,6 +107,16 @@ void EXTI1_IRQHandler(void)
 }
 
 /**
+ * @brief This function handles EXTI Line4 interrupt.
+ */
+void EXTI4_IRQHandler(void)
+{
+
+	g_Afe44xx_AdcRdy = 1;
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+}
+
+/**
  * @brief  This function handles External line 0 interrupt request.
  * @param  None
  * @retval None
@@ -113,6 +125,34 @@ void EXTI15_10_IRQHandler(void)
 {
 	WS2812B_SendColor(0,0,128);
 	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN3);
+}
+
+/**
+ * @brief This function handles USART1 global interrupt.
+ */
+void USART1_IRQHandler(void)
+{
+	uint32_t tmp1 = 0, tmp2 = 0;
+	uint8_t byte;
+
+	tmp1 = __HAL_UART_GET_FLAG(&g_Wifi_UartHandle, UART_FLAG_TC);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&g_Wifi_UartHandle, UART_IT_TC);
+	// UART in mode Transmitter end
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		g_Wifi_UartTxReady = 1;
+	}
+
+	tmp1 = __HAL_UART_GET_FLAG(&g_Wifi_UartHandle, UART_FLAG_RXNE);
+	tmp2 = __HAL_UART_GET_IT_SOURCE(&g_Wifi_UartHandle, UART_IT_RXNE);
+	/* UART in mode Receiver ---------------------------------------------------*/
+	if((tmp1 != RESET) && (tmp2 != RESET))
+	{
+		byte = (uint16_t)((&g_Wifi_UartHandle)->Instance->DR & (uint16_t)0x00FF);
+		Wifi_ProcessRx(byte);
+	}
+
+	HAL_UART_IRQHandler(&g_Wifi_UartHandle);
 }
 
 /**

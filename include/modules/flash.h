@@ -1,6 +1,6 @@
 /**
  * @file	flash.h
- * @author  Eriks Zaharans
+ * @author  Eriks & Janis Zaharans
  * @date    24 Nov 2015
  *
  * @section DESCRIPTION
@@ -16,9 +16,12 @@
 /* -- Defines -- */
 
 #define s_FLASH__NSS_PORT		GPIOB
-#define s_FLASH__NSS			GPIO_PIN_11
+#define s_FLASH__NSS			GPIO_PIN_12
 #define s_FLASH__NSS_SET()		s_FLASH__NSS_PORT->BSRR = s_FLASH__NSS
 #define s_FLASH__NSS_RESET()	s_FLASH__NSS_PORT->BSRR = s_FLASH__NSS << 16
+
+#define s_FLASH__DESELECT()		s_FLASH__NSS_SET()
+#define s_FLASH__SELECT()		s_FLASH__NSS_RESET()
 
 
 
@@ -121,8 +124,8 @@ void Flash_Deinit(void);
 
 void Flash_Command(uint8_t Cmd);
 void Flash_WaitBusy(void);
-void Flash_Program(uint32_t Addr, uint8_t *Data, uint8_t Size);
-void Flash_Read(uint32_t Addr, uint8_t *Data, uint8_t Size);
+void Flash_Program(uint32_t Addr, uint8_t *Data, uint16_t Size);
+void Flash_Read(uint32_t Addr, uint8_t *Data, uint16_t Size);
 void Flash_EraseSector(uint16_t Sector);
 void Flash_EraseChip(void);
 void Flash_ReadInfo(FlashInfo_t *Info);

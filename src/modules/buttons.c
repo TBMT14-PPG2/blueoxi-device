@@ -16,6 +16,7 @@
 /* -- Defines -- */
 
 /* -- Variables -- */
+uint8_t g_Buttons_Event = 0;
 
 /* -- Functions -- */
 

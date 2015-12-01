@@ -15,9 +15,10 @@
 
 /* -- Defines -- */
 
-/* -- Constants -- */
+#define s_COMM__MAX_PACKET_SIZE			64
 
 /* -- Constants -- */
+
 
 /* -- Enumerations -- */
 
@@ -30,6 +31,9 @@
 
 void Comm_Init(void);
 void Comm_Deinit(void);
+
+void Comm_TxPacket(void);
+void Comm_TxData(uint8_t *Data, uint8_t Size);
 
 
 

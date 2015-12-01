@@ -32,6 +32,7 @@
 /* -- Types -- */
 
 /* -- Extern -- */
+extern uint8_t g_Buttons_Event;
 
 
 /* -- Function Prototypes -- */
