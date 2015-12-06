@@ -29,5 +29,5 @@ function calcSat()
             AC_IR=max_IR-min_IR;
             DC_IR=max_IR;
             R=0.95*R+0.05*(AC_red/DC_red)/(AC_IR/DC_IR);
-            Saturation=9.554*R+81.6639; // Round(alpha*R+beta);
+            Saturation=0.95*saturation+0.05*(9.554*R+81.6639);
 }
