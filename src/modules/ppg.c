@@ -27,6 +27,8 @@
 #define s_PPG__PULSE_AVG			10
 #define s_PPG__SPO2_BUF_SIZE		1000
 
+#define s_PPG__MAX_PULSE			195
+
 /* -- Constants -- */
 
 const float32_t s_PPPG_FIR_COEFFS[s_PPG__FIR_NUM_TAPS] = {
@@ -49,6 +51,8 @@ float32_t g_Ppg_PeakVector[s_PPG__PEAK_VECTOR_SIZE];
 
 
 uint16_t g_Ppg_Pulse;
+uint8_t g_Ppg_MaxPulsePercent;
+
 float32_t g_Ppg_PulseBuf[s_PPG__PULSE_AVG];
 uint8_t g_Ppg_PulseBufI = 0;
 
@@ -170,11 +174,20 @@ void PPG_CalcPulse(uint16_t Time)
 	}
 
 	g_Ppg_Pulse = (uint16_t)temp;
+	g_Ppg_MaxPulsePercent = (g_Ppg_Pulse*100) / s_PPG__MAX_PULSE;
 }
 
 
 
-//void PPG_Buffer
+void PPG_BufferSignal(uint16_t RedData, uint16_t IrData)
+{
+
+	g_Ppg_SpO2RedBuf[g_Ppg_SpO2RedBufI] = RedData;
+	g_Ppg_SpO2IrBuf[g_Ppg_SpO2IrBufI]; = IrData;
+
+	g_Ppg_SpO2RedBufI = (g_Ppg_SpO2RedBufI + 1) % s_PPG__SPO2_BUF_SIZE;
+	g_Ppg_SpO2IrBufI = (g_Ppg_SpO2IrBufI + 1) % s_PPG__SPO2_BUF_SIZE;
+}
 
 
 

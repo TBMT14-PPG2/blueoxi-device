@@ -23,6 +23,7 @@
 
 /* -- Extern -- */
 extern uint16_t g_Ppg_Pulse;
+extern uint8_t g_Ppg_MaxPulsePercent;
 
 
 /* -- Function Prototypes -- */
@@ -31,6 +32,8 @@ void Ppg_Init(void);
 void Ppg_Deinit(void);
 void PPG_Filter(uint16_t *Input, uint16_t *Output);
 void PPG_CalcPulse(uint16_t Time);
+
+void PPG_BufferSignal(uint16_t RedData, uint16_t IrData);
 
 
 

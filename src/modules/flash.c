@@ -179,7 +179,7 @@ void Flash_EraseSector(uint16_t Sector)
 		cmd[3] = (uint8_t)(addr & 0xFF);
 	}
 	else {				// 64 kB sector
-		addr = s_FLASH__PARAMETER_BLOCK_SIZE + (Sector << 16);
+		addr = s_FLASH__PARAMETER_BLOCK_SIZE + ((Sector-16) << 16);
 		cmd[0] = s_FLASH__CMD_SECTOR_ERASE_64KB;
 		cmd[1] = (uint8_t)((addr>>16) & 0xFF);
 		cmd[2] = (uint8_t)((addr>>8) & 0xFF);
@@ -196,6 +196,9 @@ void Flash_EraseChip(void)
 {
 	//Check if Erase/Program in progress
 	Flash_WaitBusy();
+
+	// Enable write
+	Flash_Command(s_FLASH__CMD_WR_ENABLE);
 
 	// Enable write
 	Flash_Command(s_FLASH__CMD_CHIP_ERASE);

@@ -60,6 +60,9 @@ WifiEvent_t			g_Wifi_Event = s_WIFI_EVENT__NULL;
 uint8_t				g_Wifi_Ready = 0;
 
 volatile uint8_t 	g_Wifi_RxBuffer[256];
+volatile uint8_t 	g_Wifi_RxBuffer2[256];
+uint8_t 			*g_Wifi_RxBufferPtr;
+uint8_t				g_Wifi_RxBufferSwitch = 0;
 
 UART_HandleTypeDef g_Wifi_UartHandle;
 
@@ -199,9 +202,9 @@ void Wifi_Process(void)
 				if(strstr(buffer, "OK") != NULL) {
 					g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__OK;
 				}
-//				else if(strstr(buffer, "ERROR") != NULL) {
-//					g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__ERROR;
-//				}
+				//				else if(strstr(buffer, "ERROR") != NULL) {
+				//					g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__ERROR;
+				//				}
 				else if(strstr(buffer, "CONNECTED") != NULL) {
 					g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__CONNECTED;
 				}
@@ -331,11 +334,22 @@ void Wifi_TxPacket(void)
 void Wifi_TxInit(void)
 {
 	// Prepare header
+	// Init first buffer
 	g_Wifi_RxBuffer[0] = 0xA5;
 	g_Wifi_RxBuffer[1] = 0x21;
 	g_Wifi_RxBuffer[2] = 0x00;
 	g_Wifi_RxBuffer[3] = 200;
 	g_Wifi_RxBuffer[4] = ((g_Wifi_RxBuffer[0]+g_Wifi_RxBuffer[1]+g_Wifi_RxBuffer[2]+g_Wifi_RxBuffer[3])^0xFF)+1;
+
+	// Init second buffer
+	g_Wifi_RxBuffer2[0] = 0xA5;
+	g_Wifi_RxBuffer2[1] = 0x21;
+	g_Wifi_RxBuffer2[2] = 0x00;
+	g_Wifi_RxBuffer2[3] = 200;
+	g_Wifi_RxBuffer2[4] = ((g_Wifi_RxBuffer[0]+g_Wifi_RxBuffer[1]+g_Wifi_RxBuffer[2]+g_Wifi_RxBuffer[3])^0xFF)+1;
+
+	// Set buffer
+	g_Wifi_RxBufferPtr = g_Wifi_RxBuffer;
 }
 
 void Wifi_TxData(uint8_t *Data, uint8_t Size)
@@ -346,13 +360,22 @@ void Wifi_TxData(uint8_t *Data, uint8_t Size)
 
 	for (i = 0; i < Size; i++) {
 		lrc += Data[i];
-		g_Wifi_RxBuffer[cnt++] = Data[i];
+		g_Wifi_RxBufferPtr[cnt++] = Data[i];
 	}
 
 	if(cnt == (200+5)) {
 		lrc = (lrc^0xFF)+1;
-		g_Wifi_RxBuffer[cnt++] = lrc;
-		HAL_UART_Transmit_IT(&g_Wifi_UartHandle, g_Wifi_RxBuffer, cnt);
+		g_Wifi_RxBufferPtr[cnt++] = lrc;
+		HAL_UART_Transmit_IT(&g_Wifi_UartHandle, g_Wifi_RxBufferPtr, cnt);
+
+		if(g_Wifi_RxBufferSwitch == 0) {
+			g_Wifi_RxBufferPtr = g_Wifi_RxBuffer;
+			g_Wifi_RxBufferSwitch = 1;
+		}
+		else {
+			g_Wifi_RxBufferPtr = g_Wifi_RxBuffer2;
+			g_Wifi_RxBufferSwitch = 0;
+		}
 
 		lrc = 0;
 		cnt = 5;

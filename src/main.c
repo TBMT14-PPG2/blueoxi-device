@@ -34,11 +34,13 @@
 #include "main.h"
 
 
-//#define s_BLUEOXI_SERIAL	1
+#define s_BLUEOXI_SERIAL	1
 //#define s_BLUEOXI_WIFI		1
-#define s_BLUEOXI_MEMORY	1
+//#define s_BLUEOXI_MEMORY	1
 #define s_BLUEOXI_BLE		1
 
+
+#define s_MEMORY_BLOCKS		40
 
 /* USER CODE BEGIN Includes */
 
@@ -246,16 +248,19 @@ int main(void)
 	WS2812B_Init();
 	WS2812B_SendColor(0,0,128);
 
-	/*
+
+#ifdef s_BLUEOXI_MEMORY
 	uint8_t flashData[256];
 	FlashInfo_t flashInfo;
 	Flash_Init();
-	//Flash_ReadInfo(&flashInfo);
+	Flash_ReadInfo(&flashInfo);
 
 	// Erase
-	//Flash_EraseSector(16);
+	for(i = 0; i < s_MEMORY_BLOCKS; i++)
+		Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
+	//Flash_EraseChip();
 
-	Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
+	/*Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
 
 	for(i = 0; i < 256; i++) {
 		flashData[i] = i;
@@ -266,11 +271,11 @@ int main(void)
 	memset(flashData, 0, 256);
 
 	Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
-
+*/
 
 	//Flash_Command(0x55);
 	//Flash_Command(0xAA);
-	 */
+#endif
 
 	uint32_t temp = 0;
 
@@ -419,6 +424,10 @@ int main(void)
 	Comm_Init();
 #endif
 
+#ifdef s_BLUEOXI_MEMORY
+	Comm_Init();
+#endif
+
 #ifdef s_BLUEOXI_WIFI
 	Wifi_TxInit();
 	WS2812B_SendColor(0,0,128);
@@ -452,6 +461,21 @@ int main(void)
 	irSend = ppgIrData2;
 
 
+
+
+	// MEMORY BUFFERS AND STUFF
+	uint8_t		memI = 0, memSend = 0, memSwitch = 0;
+	uint16_t	*memBuf, *memBuf2;
+	uint16_t	memData[128], memData2[128];
+	uint32_t	memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+	uint8_t		memSendBuff[32];
+
+	memBuf = memData;
+	memBuf2 = memData2;
+
+
+
+
 	WS2812B_SendColor(0,128,128);
 
 
@@ -483,6 +507,9 @@ int main(void)
 			data = (final2>>8)&0xFFFF;
 			irBuf[ppgI] = data;
 			//irBuf[ppgI] = ppgCount++;
+
+			// Buffer signal for SpO2 calculation
+			PPG_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
 
 			ppgI = (ppgI + 1) % 32;
 
@@ -555,7 +582,7 @@ int main(void)
 
 				HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
 
-				Gui_UpdateValues(&graphObj, 1, 0, (uint8_t)g_Ppg_Pulse, 0);
+				Gui_UpdateValues(&graphObj, 1, g_Ppg_MaxPulsePercent, (uint8_t)g_Ppg_Pulse, 0);
 				SharpLcd_DisplayBuffer(graphObj.pBuf);
 			}
 
@@ -563,7 +590,72 @@ int main(void)
 		Ble_Process();
 #endif
 
+#ifdef s_BLUEOXI_MEMORY
+		//Check if ADC ready
+		if(g_Afe44xx_AdcRdy == 1 && g_Buttons_Event == 1)
+		{
+			g_Afe44xx_AdcRdy = 0;
 
+			final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+			final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+			data = (final1>>8)&0xFFFF;
+			memBuf[memI++] = data;
+			data = (final2>>8)&0xFFFF;
+			memBuf[memI] = data;
+
+
+			if(memSend == 2)
+			{
+				Comm_TxData((uint8_t*)&memBuf[memI-1], sizeof(data));
+				Comm_TxData((uint8_t*)&memBuf[memI], sizeof(data));
+			}
+
+			memI = (memI + 1) % 128;
+
+			if(memI == 0 && memSend == 0)
+			{
+				// switch buffers
+				//				if(memSwitch == 0) {
+				//					memRedBuf = memRedData2;
+				//					memIrBuf = memIrData2;
+				//					memRedSave = memRedData;
+				//					memIrSave = memIrData;
+				//					memSwitch = 1;
+				//				} else {
+				//					memRedBuf = memRedData;
+				//					memIrBuf = memIrData;
+				//					memRedSave = memRedData2;
+				//					memIrSave = memIrData2;
+				//					memSwitch = 0;
+				//				}
+
+				// Save to memory
+				Flash_Program(memAddr, (uint8_t*)memBuf, 256);
+				memAddr += 256;
+
+				if(memAddr > (s_FLASH__PARAMETER_BLOCK_SIZE + 65536 * s_MEMORY_BLOCKS))
+				{
+					memSend = 1;
+					memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+				}
+			}
+
+			if(memSend == 1)
+			{
+				Flash_Read(memAddr, memSendBuff, 4);
+				memAddr += 4;
+
+				Comm_TxData(&memSendBuff[0], 2);
+				Comm_TxData(&memSendBuff[2], 2);
+
+				if(memAddr > (s_FLASH__PARAMETER_BLOCK_SIZE + 65536 * s_MEMORY_BLOCKS))
+				{
+					memSend = 2;
+				}
+			}
+		}
+#endif
 
 		// WiFi Send
 		/*if(g_Wifi_UartTxReady == 1 && (
