@@ -16,7 +16,7 @@
 /* -- Defines -- */
 
 /* -- Variables -- */
-uint8_t				g_Ble_UartTxReady = 0;
+uint8_t				g_Ble_UartTxReady = 1;
 CircularBuffer_t	g_Ble_UartRxBuffer;
 
 UART_HandleTypeDef	g_Ble_UartHandle;
@@ -124,6 +124,23 @@ void Ble_Process(void)
 				break;
 			}
 		}
+	}
+}
+
+
+void Ble_SendPulse(uint8_t Pulse)
+{
+	uint8_t packet[5];
+
+	if(g_Ble_UartTxReady == 1)
+	{
+		g_Ble_UartTxReady = 0;
+		packet[0] = 0xA5;
+		packet[1] = 0;
+		packet[2] = Pulse;
+		packet[3] = 0;
+		packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
+		HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
 	}
 }
 

@@ -35,6 +35,7 @@ void Ble_Deinit(void);
 
 void Ble_ProcessRx(uint8_t Byte);
 void Ble_Process(void);
+void Ble_SendPulse(uint8_t Pulse);
 
 
 

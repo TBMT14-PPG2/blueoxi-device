@@ -14,6 +14,9 @@
 #include "main.h"
 
 /* -- Defines -- */
+#define s_COMM__DATA_SAMPLES		16
+#define s_COMM__BYTES_PER_SAMPLE	2
+#define s_COMM__DATA_BYTES			(s_COMM__DATA_SAMPLES * s_COMM__BYTES_PER_SAMPLE)
 
 /* -- Variables -- */
 volatile uint8_t g_Comm_RxBuffer[64];
@@ -31,7 +34,7 @@ void Comm_Init(void)
 	g_Comm_RxBuffer[0] = 0xA5;
 	g_Comm_RxBuffer[1] = 0x21;
 	g_Comm_RxBuffer[2] = 0x00;
-	g_Comm_RxBuffer[3] = 32;
+	g_Comm_RxBuffer[3] = s_COMM__DATA_BYTES;
 	g_Comm_RxBuffer[4] = ((g_Comm_RxBuffer[0]+g_Comm_RxBuffer[1]+g_Comm_RxBuffer[2]+g_Comm_RxBuffer[3])^0xFF)+1;
 }
 
@@ -89,7 +92,7 @@ void Comm_TxData(uint8_t *Data, uint8_t Size)
 		g_Comm_RxBuffer[cnt++] = Data[i];
 	}
 
-	if(cnt == (56+5)) {
+	if(cnt == (s_COMM__DATA_BYTES+5)) {
 		lrc = (lrc^0xFF)+1;
 		g_Comm_RxBuffer[cnt++] = lrc;
 		CDC_Transmit_FS(g_Comm_RxBuffer, cnt);
