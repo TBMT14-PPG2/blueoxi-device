@@ -24,6 +24,7 @@
 /* -- Extern -- */
 extern uint16_t g_Ppg_Pulse;
 extern uint8_t g_Ppg_MaxPulsePercent;
+extern uint16_t g_Ppg_SpO2;
 
 
 /* -- Function Prototypes -- */

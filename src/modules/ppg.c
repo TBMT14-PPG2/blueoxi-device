@@ -52,6 +52,7 @@ float32_t g_Ppg_PeakVector[s_PPG__PEAK_VECTOR_SIZE];
 
 uint16_t g_Ppg_Pulse;
 uint8_t g_Ppg_MaxPulsePercent;
+uint16_t g_Ppg_SpO2;
 
 float32_t g_Ppg_PulseBuf[s_PPG__PULSE_AVG];
 uint8_t g_Ppg_PulseBufI = 0;
@@ -60,6 +61,7 @@ uint16_t g_Ppg_SpO2RedBuf[s_PPG__SPO2_BUF_SIZE];
 uint16_t g_Ppg_SpO2RedBufI = 0;
 uint16_t g_Ppg_SpO2IrBuf[s_PPG__SPO2_BUF_SIZE];
 uint16_t g_Ppg_SpO2IrBufI = 0;
+float32_t g_Ppg_SpO2R = 0.5f;
 
 
 
@@ -175,6 +177,9 @@ void PPG_CalcPulse(uint16_t Time)
 
 	g_Ppg_Pulse = (uint16_t)temp;
 	g_Ppg_MaxPulsePercent = (g_Ppg_Pulse*100) / s_PPG__MAX_PULSE;
+
+
+	PPG_CalcSat();
 }
 
 
@@ -183,7 +188,7 @@ void PPG_BufferSignal(uint16_t RedData, uint16_t IrData)
 {
 
 	g_Ppg_SpO2RedBuf[g_Ppg_SpO2RedBufI] = RedData;
-	g_Ppg_SpO2IrBuf[g_Ppg_SpO2IrBufI]; = IrData;
+	g_Ppg_SpO2IrBuf[g_Ppg_SpO2IrBufI] = IrData;
 
 	g_Ppg_SpO2RedBufI = (g_Ppg_SpO2RedBufI + 1) % s_PPG__SPO2_BUF_SIZE;
 	g_Ppg_SpO2IrBufI = (g_Ppg_SpO2IrBufI + 1) % s_PPG__SPO2_BUF_SIZE;
@@ -191,38 +196,40 @@ void PPG_BufferSignal(uint16_t RedData, uint16_t IrData)
 
 
 
-/*void PPG_CalcSat()
+void PPG_CalcSat()
 {
-    max_red=0;
-    min_red=2^16;
-    max_IR=0;
-    min_IR=2^16;
+	uint32_t i;
+	uint16_t maxRed=0;
+	uint16_t minRed=0xFFFF;
+	uint16_t maxIr=0;
+	uint16_t minIr=0xFFFF;
 
-    for(i=0;i<=900;i++)
-            {
-                if (redSig[count-1000+i]>max_red)
-                {
-                    max_red=redSig[count-1000+i];
-                }
-                else if (redSig[count-1000+i]<min_red)
-                {
-                    min_red=redSig[count-1000+i];
-                }
-                if (IRSig[count-500+i]>max_IR)
-                {
-                    max_IR=IRSig[count-1000+i];
-                }
-                else if (IRSig[count-1000+i]<min_IR)
-                {
-                    min_IR=IRSig[count-1000+i];
-                }
-            }
-            AC_red=max_red-min_red;
-            DC_red=max_red;
-            AC_IR=max_IR-min_IR;
-            DC_IR=max_IR;
-            R=0.95*R+0.05*(AC_red/DC_red)/(AC_IR/DC_IR);
-            Saturation=9.554*R+81.6639; // Round(alpha*R+beta);
-}*/
+	float32_t acRed, dcRed, acIr, dcIr;
+
+	for(i = 0; i < s_PPG__SPO2_BUF_SIZE; i++)
+	{
+		if(g_Ppg_SpO2RedBuf[i] > maxRed) {
+			maxRed = g_Ppg_SpO2RedBuf[i];
+		}
+		else if(g_Ppg_SpO2RedBuf[i] < minRed) {
+			minRed = g_Ppg_SpO2RedBuf[i];
+		}
+
+		if(g_Ppg_SpO2IrBuf[i] > maxIr) {
+			maxIr = g_Ppg_SpO2IrBuf[i];
+		}
+		else if(g_Ppg_SpO2IrBuf[i] < minIr) {
+			minIr = g_Ppg_SpO2IrBuf[i];
+		}
+	}
+
+	acRed = maxRed - minRed;
+	dcRed = maxRed;
+	acIr = maxIr - minIr;
+	dcIr = maxIr;
+	g_Ppg_SpO2R = 0.5f * g_Ppg_SpO2R + 0.5f * (acRed/dcRed) / (acIr/dcIr);
+
+	g_Ppg_SpO2 = (uint16_t)(112.0f - 24.0f * g_Ppg_SpO2R);
+}
 
 

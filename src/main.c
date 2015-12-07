@@ -302,7 +302,7 @@ int main(void)
 	// Turn Off LEDs
 	temp = Afe44xx_ReadRegister(s_AFE44XX__LEDCNTRL);
 	temp &= ~(0x00FFFF);
-	temp |= 0x003030;
+	temp |= 0x005050;
 	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
 	Afe44xx_WriteRegister(s_AFE44XX__LEDCNTRL, temp);
 	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
@@ -332,7 +332,7 @@ int main(void)
 	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
 	temp &= ~(0x000700);
 	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (1<<8));
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (2<<8));
 	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
 
 	// ---------------------------------------------------------------
@@ -503,9 +503,9 @@ int main(void)
 			//			Comm_TxData((uint8_t*)&data, sizeof(data));
 
 			data = (final1>>8)&0xFFFF;
-			redBuf[ppgI] = data;
-			data = (final2>>8)&0xFFFF;
 			irBuf[ppgI] = data;
+			data = (final2>>8)&0xFFFF;
+			redBuf[ppgI] = data;
 			//irBuf[ppgI] = ppgCount++;
 
 			// Buffer signal for SpO2 calculation
@@ -542,6 +542,7 @@ int main(void)
 				ppgPeak = PPG_DetectPeak(redSend[ppgI]);
 
 				Comm_TxData((uint8_t*)&ppgPeak, sizeof(data));
+				//Comm_TxData((uint8_t*)&g_Ppg_SpO2, sizeof(data));
 				//Comm_TxData((uint8_t*)&redSend[ppgI], sizeof(data));
 				Comm_TxData((uint8_t*)&irSend[ppgI], sizeof(data));
 			}
@@ -582,7 +583,7 @@ int main(void)
 
 				HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
 
-				Gui_UpdateValues(&graphObj, 1, g_Ppg_MaxPulsePercent, (uint8_t)g_Ppg_Pulse, 0);
+				Gui_UpdateValues(&graphObj, 1, g_Ppg_MaxPulsePercent, (uint8_t)g_Ppg_Pulse, (uint8_t)g_Ppg_SpO2);
 				SharpLcd_DisplayBuffer(graphObj.pBuf);
 			}
 
