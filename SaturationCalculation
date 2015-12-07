@@ -1,0 +1,33 @@
+function calcSat()
+{
+    max_red=0;
+    min_red=2^16;
+    max_IR=0;
+    min_IR=2^16;
+
+    for(i=0;i<=900;i++)
+            {
+                if (redSig[count-1000+i]>max_red)
+                {
+                    max_red=redSig[count-1000+i];
+                }
+                else if (redSig[count-1000+i]<min_red)
+                {
+                    min_red=redSig[count-1000+i];
+                }
+                if (IRSig[count-500+i]>max_IR)
+                {
+                    max_IR=IRSig[count-1000+i];
+                }
+                else if (IRSig[count-1000+i]<min_IR)
+                {
+                    min_IR=IRSig[count-1000+i];
+                }
+            }
+            AC_red=max_red-min_red;
+            DC_red=max_red;
+            AC_IR=max_IR-min_IR;
+            DC_IR=max_IR;
+            R=0.95*R+0.05*(AC_red/DC_red)/(AC_IR/DC_IR);
+            Saturation=0.95*saturation+0.05*(9.554*R+81.6639);
+}
