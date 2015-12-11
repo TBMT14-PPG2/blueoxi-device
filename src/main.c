@@ -34,10 +34,10 @@
 #include "main.h"
 
 
-#define s_BLUEOXI_SERIAL	1
-//#define s_BLUEOXI_WIFI		1
+//#define s_BLUEOXI_SERIAL	1
+#define s_BLUEOXI_WIFI		1
 //#define s_BLUEOXI_MEMORY	1
-#define s_BLUEOXI_BLE		1
+//#define s_BLUEOXI_BLE		1
 
 
 #define s_MEMORY_BLOCKS		40
