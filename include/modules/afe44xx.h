@@ -112,5 +112,7 @@ void Afe44xx_Reset(void);
 uint32_t Afe44xx_ReadRegister(uint8_t Addr);
 void Afe44xx_WriteRegister(uint8_t Addr, uint32_t Data);
 
+Error_t Afe44xx_SetUp(void);
+
 
 #endif

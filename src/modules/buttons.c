@@ -18,6 +18,12 @@
 /* -- Variables -- */
 uint8_t g_Buttons_Event = 0;
 
+
+
+uint8_t g_Buttons_TopPressEvent = 0;
+uint8_t g_Buttons_MidPressEvent = 0;
+uint8_t g_Buttons_BotPressEvent = 0;
+
 /* -- Functions -- */
 
 /**
@@ -66,5 +72,15 @@ void Buttons_Init(void)
 void Buttons_Deinit(void)
 {
 
+}
+
+
+void Buttons_ClearAllEvents(void)
+{
+	// Debounce delay
+	HAL_Delay(300);
+	g_Buttons_TopPressEvent = 0;
+	g_Buttons_MidPressEvent = 0;
+	g_Buttons_BotPressEvent = 0;
 }
 

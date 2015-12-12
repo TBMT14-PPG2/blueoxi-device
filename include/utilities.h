@@ -39,6 +39,13 @@ typedef struct s_CIRCULAR_BUFFER_STRUCT
 } CircularBuffer_t;
 
 /* -- Extern -- */
+/**
+ * @brief Error
+ */
+typedef enum s_ERROR_ENUM {
+	s_OK = 0,
+	s_ERROR
+} Error_t;
 
 /* -- Function Prototypes -- */
 

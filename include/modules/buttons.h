@@ -34,11 +34,17 @@
 /* -- Extern -- */
 extern uint8_t g_Buttons_Event;
 
+extern uint8_t g_Buttons_TopPressEvent;
+extern uint8_t g_Buttons_MidPressEvent;
+extern uint8_t g_Buttons_BotPressEvent;
+
 
 /* -- Function Prototypes -- */
 
 void Buttons_Init(void);
 void Buttons_Deinit(void);
+
+void Buttons_ClearAllEvents(void);
 
 
 #endif /* __BUTTONS_H */

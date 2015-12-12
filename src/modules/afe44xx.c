@@ -186,3 +186,73 @@ void Afe44xx_WriteRegister(uint8_t Addr, uint32_t Data)
 }
 
 
+
+
+
+
+Error_t Afe44xx_SetUp(void)
+{
+	Error_t error = s_ERROR;
+	uint32_t temp = 0;
+
+	// AFE44XX Test --------------------------------------------------
+	Afe44xx_ConfigHw();
+	HAL_Delay(500);
+
+	// Testing
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__LED2STC, 0x0A5A);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+	temp = Afe44xx_ReadRegister(s_AFE44XX__LED2STC);
+
+	if(temp == 0x0A5A) {
+		error = s_OK;
+	} else {
+		return s_ERROR;
+	}
+
+	Afe44xx_Init();
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// Turn Off LEDs
+	temp = Afe44xx_ReadRegister(s_AFE44XX__LEDCNTRL);
+	temp &= ~(0x00FFFF);
+	temp |= 0x005050;
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__LEDCNTRL, temp);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// Set Gain
+	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
+	temp &= ~(0x000007);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | 5);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// 2nd Stage (1 - on, 0 - off)
+	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
+	temp &= ~(0x004000);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (1<<14));
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// 2nd stage DAC
+	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
+	temp &= ~(0x0F0000);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (2<<16));
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	// 2nd Stage Gain
+	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
+	temp &= ~(0x000700);
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
+	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (2<<8));
+	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
+
+	return error;
+}
+
+
+
+

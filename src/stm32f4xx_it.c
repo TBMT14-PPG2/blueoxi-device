@@ -89,10 +89,13 @@ void OTG_FS_IRQHandler(void)
  */
 void EXTI0_IRQHandler(void)
 {
-	WS2812B_SendColor(128,0,0);
-	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN1);
-
+	// TODO: Need to remove this. Set button event.
 	g_Buttons_Event = 1;
+
+	// Set Top button event
+	g_Buttons_TopPressEvent = 1;
+
+	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN1);
 }
 
 /**
@@ -102,7 +105,9 @@ void EXTI0_IRQHandler(void)
  */
 void EXTI1_IRQHandler(void)
 {
-	WS2812B_SendColor(0,128,0);
+	// Set Mid button event
+	g_Buttons_MidPressEvent = 1;
+
 	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN4);
 }
 
@@ -123,7 +128,9 @@ void EXTI4_IRQHandler(void)
  */
 void EXTI15_10_IRQHandler(void)
 {
-	WS2812B_SendColor(0,0,128);
+	// Set Bot button event
+	g_Buttons_BotPressEvent = 1;
+
 	HAL_GPIO_EXTI_IRQHandler(s_BUTTONS__BTN3);
 }
 

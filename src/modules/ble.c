@@ -130,7 +130,7 @@ void Ble_Process(void)
 
 void Ble_SendPulse(uint8_t Pulse)
 {
-	uint8_t packet[5];
+	static uint8_t packet[5];
 
 	if(g_Ble_UartTxReady == 1)
 	{

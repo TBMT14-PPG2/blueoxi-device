@@ -17,26 +17,17 @@
 
 /* -- Constants -- */
 const uint8_t *const s_WIFI__CMD_LIST[] = {
-		"+++",
-		"AT\r\n",
-		"AT+CWLIF\r\n",
 		"AT+CIPMODE=1\r\n",
 		"AT+CIPSTART=\"TCP\",\"192.168.4.2\",2222\r\n",
 		"AT+CIPSEND\r\n"
 };
 const uint8_t s_WIFI__CMD_LENGTH[] = {
-		sizeof("+++")-1,
-		sizeof("AT\r\n")-1,
-		sizeof("AT+CWLIF\r\n")-1,
 		sizeof("AT+CIPMODE=1\r\n")-1,
 		sizeof("AT+CIPSTART=\"TCP\",\"192.168.4.2\",2222\r\n")-1,
 		sizeof("AT+CIPSEND\r\n")-1
 };
 
 const WifiAtAnswer_t s_WIFI__CMD_ANSWER[] = {
-		s_WIFI_AT_ANSWER__NONE,
-		s_WIFI_AT_ANSWER__OK,
-		s_WIFI_AT_ANSWER__OK,
 		s_WIFI_AT_ANSWER__OK,
 		s_WIFI_AT_ANSWER__CONNECTED,
 		s_WIFI_AT_ANSWER__OK
@@ -45,11 +36,32 @@ const WifiAtAnswer_t s_WIFI__CMD_ANSWER[] = {
 const WifiEvent_t s_WIFI__CMD_EVENT[] = {
 		s_WIFI_EVENT__NONE,
 		s_WIFI_EVENT__NONE,
-		s_WIFI_EVENT__STATION_CONNECTED,
-		s_WIFI_EVENT__NONE,
-		s_WIFI_EVENT__NONE,
 		s_WIFI_EVENT__NONE
 };
+
+
+
+
+
+const uint8_t *const s_WIFI__WAIT_LIST[] = {
+		"AT\r\n",
+		"AT+CWLIF\r\n",
+};
+const uint8_t s_WIFI__WAIT_LENGTH[] = {
+		sizeof("AT\r\n")-1,
+		sizeof("AT+CWLIF\r\n")-1,
+};
+
+const WifiAtAnswer_t s_WIFI__WAIT_ANSWER[] = {
+		s_WIFI_AT_ANSWER__OK,
+		s_WIFI_AT_ANSWER__OK,
+};
+
+const WifiEvent_t s_WIFI__WAIT_EVENT[] = {
+		s_WIFI_EVENT__NONE,
+		s_WIFI_EVENT__STATION_CONNECTED,
+};
+
 
 
 /* -- Variables -- */
@@ -234,13 +246,13 @@ void Wifi_Process(void)
 
 
 
-uint8_t Wifi_ProcessConnect(void)
+uint8_t Wifi_ProcessConnect(const uint8_t *const List[], const uint8_t Length[], const WifiAtAnswer_t Answer[],  const WifiEvent_t Event[], uint8_t Count)
 {
 	static uint8_t cnt = 0, waitAnswer = 0;
 	static uint8_t buf[64];
 
 	// Can send/packet sent
-	if(cnt < s_WIFI__CMD_COUNT)
+	if(cnt < Count)
 	{
 		if(g_Wifi_UartTxReady == 1)
 		{
@@ -248,22 +260,22 @@ uint8_t Wifi_ProcessConnect(void)
 			if(waitAnswer == 1)
 			{
 				// Check awaited answer
-				if(g_Wifi_AtAnswer == s_WIFI__CMD_ANSWER[cnt]) {
-					// Check awiated event
-					if(g_Wifi_Event == s_WIFI__CMD_EVENT[cnt]) {
+				if(g_Wifi_AtAnswer == Answer[cnt]) {
+					// Check awaited event
+					if(g_Wifi_Event == Event[cnt]) {
 						g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__NULL;	// Reset
 						g_Wifi_Event = s_WIFI_EVENT__NULL;
 						waitAnswer = 0;
 						cnt++;
 					}
 					// Check if event is required
-					else if(s_WIFI__CMD_EVENT[cnt] == s_WIFI_EVENT__NONE) {
+					else if(Event[cnt] == s_WIFI_EVENT__NONE) {
 						g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__NULL;	// Reset
 						g_Wifi_Event = s_WIFI_EVENT__NULL;
 						waitAnswer = 0;
 						cnt++;
 					}
-					// If no-event received althought required -> re-send
+					// If no-event received although required -> re-send
 					else {
 						HAL_Delay(1000);
 						g_Wifi_AtAnswer = s_WIFI_AT_ANSWER__NULL;	// Reset
@@ -272,7 +284,7 @@ uint8_t Wifi_ProcessConnect(void)
 					}
 				}
 				// Check if answer is required
-				else if(s_WIFI__CMD_ANSWER[cnt] == s_WIFI_AT_ANSWER__NONE) {
+				else if(Answer[cnt] == s_WIFI_AT_ANSWER__NONE) {
 					HAL_Delay(1000);
 					waitAnswer = 0;
 					cnt++;
@@ -288,8 +300,8 @@ uint8_t Wifi_ProcessConnect(void)
 			{
 				// Send
 				g_Wifi_UartTxReady = 0;
-				memcpy(buf, s_WIFI__CMD_LIST[cnt], s_WIFI__CMD_LENGTH[cnt]);
-				HAL_UART_Transmit_IT(&g_Wifi_UartHandle, buf, s_WIFI__CMD_LENGTH[cnt]);
+				memcpy(buf, List[cnt], Length[cnt]);
+				HAL_UART_Transmit_IT(&g_Wifi_UartHandle, buf, Length[cnt]);
 				waitAnswer = 1;
 			}
 		}
@@ -297,6 +309,9 @@ uint8_t Wifi_ProcessConnect(void)
 		return 1;
 	}
 	else {
+		cnt = 0;
+		waitAnswer = 0;
+
 		return 0;
 	}
 }
@@ -390,6 +405,16 @@ void Wifi_Simple(void)
 
 }
 
+
+uint8_t Wifi_Connect(void)
+{
+	return Wifi_ProcessConnect(s_WIFI__CMD_LIST, s_WIFI__CMD_LENGTH, s_WIFI__CMD_ANSWER, s_WIFI__CMD_EVENT, s_WIFI__CMD_COUNT);
+}
+
+uint8_t Wifi_Wait(void)
+{
+	return Wifi_ProcessConnect(s_WIFI__WAIT_LIST, s_WIFI__WAIT_LENGTH, s_WIFI__WAIT_ANSWER, s_WIFI__WAIT_EVENT, s_WIFI__WAIT_COUNT);
+}
 
 
 

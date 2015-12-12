@@ -43,6 +43,18 @@
 #define s_POWER__PPG_EN_SET()			s_POWER__PPG_EN_PORT->BSRR = s_POWER__PPG_EN
 #define s_POWER__PPG_EN_RESET()			s_POWER__PPG_EN_PORT->BSRR = s_POWER__PPG_EN << 16
 
+#define s_POWER__BAT_LVL_EN_PORT		GPIOC
+#define s_POWER__BAT_LVL_EN				GPIO_PIN_13
+#define s_POWER__BAT_LVL_EN_SET()		s_POWER__BAT_LVL_EN_PORT->BSRR = s_POWER__BAT_LVL_EN
+#define s_POWER__BAT_LVL_EN_RESET()		s_POWER__BAT_LVL_EN_PORT->BSRR = s_POWER__BAT_LVL_EN << 16
+
+#define s_POWER__BAT_LVL_PORT			GPIOC
+#define s_POWER__BAT_LVL				GPIO_PIN_0
+
+#define s_POWER__CHARGE_STAT_PORT		GPIOB
+#define s_POWER__CHARGE_STAT			GPIO_PIN_7
+#define s_POWER__CHARGE_STAT_ISSET()	((s_POWER__CHARGE_STAT_PORT->IDR & s_POWER__CHARGE_STAT) != (uint32_t)GPIO_PIN_RESET)
+
 /* -- Constants -- */
 
 /* -- Enumerations -- */
@@ -56,6 +68,8 @@
 
 void Power_Init(void);
 void Power_Deinit(void);
+
+uint32_t Power_BateryLevel(void);
 
 
 

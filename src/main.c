@@ -34,10 +34,10 @@
 #include "main.h"
 
 
-//#define s_BLUEOXI_SERIAL	1
+#define s_BLUEOXI_SERIAL	1
 #define s_BLUEOXI_WIFI		1
-//#define s_BLUEOXI_MEMORY	1
-//#define s_BLUEOXI_BLE		1
+#define s_BLUEOXI_MEMORY	1
+#define s_BLUEOXI_BLE		1
 
 
 #define s_MEMORY_BLOCKS		40
@@ -193,257 +193,16 @@ const uint8_t image[13][122] =
 
 int main(void)
 {
-
-	/* USER CODE BEGIN 1 */
-
-	/* USER CODE END 1 */
-
-	/* MCU Configuration----------------------------------------------------------*/
-
-	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-	HAL_Init();
-
-	/* Configure the system clock */
-	SystemClock_Config();
-
-	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_USB_DEVICE_Init();
-
-
-
-	//while(1);
-
-	Wifi_Init();
-	//Wifi_InitExt();
-
-	/* USER CODE BEGIN 2 */
-
-
-	Power_Init();
-
-	uint32_t i, j, count = 0, len;
-	uint8_t str[64];
-	uint32_t val;
-
-	GraphicsObj_t graphObj;
-	Graphics_Init(&graphObj);
-	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__WHITE);
-
-
-	s_POWER__LCD_EN_SET();
-	s_POWER__BLE_MEMS_EN_SET();
-
-#ifdef s_BLUEOXI_WIFI
-	s_POWER__WIFI_EN_SET();
-#else
-	s_POWER__WIFI_EN_RESET();
-#endif
-	s_POWER__GPS_EN_RESET();
-	s_POWER__PPG_EN_SET();
-
-
-	// LED TEST
-	// ------------------------------------------------------------------
-	WS2812B_Init();
-	WS2812B_SendColor(0,0,128);
-
-
-#ifdef s_BLUEOXI_MEMORY
-	uint8_t flashData[256];
-	FlashInfo_t flashInfo;
-	Flash_Init();
-	Flash_ReadInfo(&flashInfo);
-
-	// Erase
-	for(i = 0; i < s_MEMORY_BLOCKS; i++)
-		Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
-	//Flash_EraseChip();
-
-	/*Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
-
-	for(i = 0; i < 256; i++) {
-		flashData[i] = i;
-	}
-
-	Flash_Program(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
-
-	memset(flashData, 0, 256);
-
-	Flash_Read(s_FLASH__PARAMETER_BLOCK_SIZE, flashData, 256);
-*/
-
-	//Flash_Command(0x55);
-	//Flash_Command(0xAA);
-#endif
-
-	uint32_t temp = 0;
-
-
-	// AFE44XX Test --------------------------------------------------
-	Afe44xx_ConfigHw();
-	HAL_Delay(500);
-
-	// Testing
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__LED2STC, 0x0A5A);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-	temp = Afe44xx_ReadRegister(s_AFE44XX__LED2STC);
-
-	if(temp == 0x0A5A) {
-		WS2812B_SendColor(0,128,0);
-	} else {
-		WS2812B_SendColor(128,0,0);
-	}
-
-	Afe44xx_Init();
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// Turn Off LEDs
-	temp = Afe44xx_ReadRegister(s_AFE44XX__LEDCNTRL);
-	temp &= ~(0x00FFFF);
-	temp |= 0x005050;
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__LEDCNTRL, temp);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// Set Gain
-	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
-	temp &= ~(0x000007);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | 5);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// 2nd Stage (1 - on, 0 - off)
-	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
-	temp &= ~(0x004000);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (1<<14));
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// 2nd stage DAC
-	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
-	temp &= ~(0x0F0000);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (2<<16));
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// 2nd Stage Gain
-	temp = Afe44xx_ReadRegister(s_AFE44XX__TIA_AMB_GAIN);
-	temp &= ~(0x000700);
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0000);
-	Afe44xx_WriteRegister(s_AFE44XX__TIA_AMB_GAIN, temp | (2<<8));
-	Afe44xx_WriteRegister(s_AFE44XX__CONTROL0, 0x0001);
-
-	// ---------------------------------------------------------------
-
-
-
-
-
-
-	SharpLcd_Init();
-	SharpLcd_PowerOn();
-
-	SharpLcd_Clear();
-	SharpLcd_Clear();
-
-
-	Graphics_DrawBitmap(&graphObj, 22, 23, (uint8_t *)image, 100, 122, s_GRAPHICS_COLOR__BLACK);
-	Graphics_DrawString(&graphObj, 10, 10, (uint8_t *)"Hello World!", s_GRAPHICS_COLOR__BLACK);
-	SharpLcd_DisplayBuffer(graphObj.pBuf);
-	HAL_Delay(1000);
-
-	Gui_UpdateValues(&graphObj, 0, 0, 0, 0);
-	SharpLcd_DisplayBuffer(graphObj.pBuf);
-
-	// SharpLcd_PowerOff();
-
-
-
-	// TEST MOTOR
-	// ------------------------------------------------------------------
-	//	Motor_Init();
-	//	for(i = 0; i < 10; i++)
-	//	{
-	//		s_MOTOR__DRIVE_SET();
-	//		HAL_Delay(500);
-	//		s_MOTOR__DRIVE_RESET();
-	//		HAL_Delay(500);
-	//	}
-	// ------------------------------------------------------------------
-
-
-	// BUTTON TEST
-	// ------------------------------------------------------------------
-	Buttons_Init();
-	// ------------------------------------------------------------------
-
-	/* USER CODE END 2 */
-
-	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
-
-
-
-	Ble_Init();
-
-	uint8_t packet[5];
-	packet[0] = 0xA5;
-	packet[1] = 0;
-	packet[2] = 0;
-	packet[3] = 0;
-	packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
-
-	count = 0;
-	HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
-
-
-
-	HAL_Delay(1000);
-	//	len = sprintf(str, "+++");
-	//	HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-	//
-	//	HAL_Delay(1000);
-	//	len = sprintf(str, s_WIFI__CONFIG_AT);
-	//	HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-
-
-	uint8_t wifi_state = 2;
-
-
-
-	//	HAL_Delay(3000);
-	//
+	// ----- Local Vairables -----
+	uint32_t i;
+	uint8_t exit;
 	uint32_t final2, final1;
 	uint16_t data;
-
-	count = 0;
-
-#ifdef s_BLUEOXI_SERIAL
-	Comm_Init();
-#endif
-
-#ifdef s_BLUEOXI_MEMORY
-	Comm_Init();
-#endif
-
-#ifdef s_BLUEOXI_WIFI
-	Wifi_TxInit();
-	WS2812B_SendColor(0,0,128);
-	// Connect
-	uint8_t exit = 1;
-	while(exit)
-	{
-		if(g_Buttons_Event == 1) {
-			exit = Wifi_ProcessConnect();
-			Wifi_Process();
-		}
-	}
-#endif
+	uint8_t str[32];
+	uint8_t chargingStatus = 0;
 
 
-	// PPG TESTING
+	// PPG
 	uint8_t		ppgI = 0, ppgSend = 0, ppgSwitch = 0;
 	uint16_t	*redBuf, *irBuf, *redSend, *irSend;
 	uint16_t	ppgRedData[32], ppgIrData[32];
@@ -453,12 +212,364 @@ int main(void)
 
 	uint16_t 	ppgPeak;
 
-	PPG_Init();
+	uint32_t updateTimer;
 
-	redBuf = ppgRedData;
-	irBuf = ppgIrData;
-	redSend = ppgRedData2;
-	irSend = ppgIrData2;
+
+	/* MCU Configuration----------------------------------------------------------*/
+
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+	/* Configure the system clock */
+	SystemClock_Config();
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+
+	// ----- Init power -----
+	Power_Init();
+	// Turn on LCD
+	s_POWER__LCD_EN_SET();
+	// TODO: Turn on BLE because of faulty chip
+	s_POWER__BLE_MEMS_EN_SET();
+
+	// ----- Init buttons -----
+	Buttons_Init();
+
+	// ----- Init display and show splash screen
+	GraphicsObj_t graphObj;
+	Graphics_Init(&graphObj);
+	Graphics_ClearBuffer(&graphObj, s_GRAPHICS_COLOR__WHITE);
+
+	SharpLcd_Init();
+	SharpLcd_PowerOn();
+	SharpLcd_Clear();
+
+	Graphics_DrawBitmap(&graphObj, 22, 23, (uint8_t *)image, 100, 122, s_GRAPHICS_COLOR__BLACK);
+	//Graphics_DrawString(&graphObj, 10, 10, (uint8_t *)"Hello World!", s_GRAPHICS_COLOR__BLACK);
+	SharpLcd_DisplayBuffer(graphObj.pBuf);
+	HAL_Delay(2000);
+
+	//Gui_UpdateValues(&graphObj, 0, 0, 0, 0);
+	//SharpLcd_DisplayBuffer(graphObj.pBuf);
+
+	// ----- Init LED -----
+	WS2812B_Init();
+	WS2812B_SendColor(0,16,0);
+
+	// Display menu
+	Gui_DisplayMenu(&graphObj, Power_BateryLevel(), chargingStatus);
+
+	// Update timer
+	updateTimer = HAL_GetTick();
+
+	// Wait for decision
+	while(1)
+	{
+
+		// Check battery
+		if((HAL_GetTick() - updateTimer) > 10000) {
+			updateTimer = HAL_GetTick();
+
+			// Check charging
+			if(s_POWER__CHARGE_STAT_ISSET()) {
+				chargingStatus = 0;
+			}
+			else {
+				chargingStatus = 1;
+			}
+
+			// Update menu
+			Gui_DisplayMenu(&graphObj, Power_BateryLevel(), chargingStatus);
+
+		}
+
+		// Check all the buttons
+		if(g_Buttons_TopPressEvent == 1) {
+			// Clear event
+			Buttons_ClearAllEvents();
+
+			// Turn on Wifi
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Booting WiFi...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			s_POWER__WIFI_EN_SET();
+			HAL_Delay(3000);
+			Wifi_Init();
+			Wifi_TxInit();
+			HAL_Delay(1000);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connect to:", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"\"blueoxi_wifi\"", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+
+			// Wait for Client
+			exit = 1;
+			while(exit)
+			{
+				exit = Wifi_Wait();
+				Wifi_Process();
+			}
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Client", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connected.", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			HAL_Delay(2000);
+
+			// Wait for Start
+			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			while(!g_Buttons_MidPressEvent);
+
+			// Setup PPG
+			Buttons_ClearAllEvents();
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			s_POWER__PPG_EN_SET();
+			HAL_Delay(1000);
+			if(Afe44xx_SetUp() == s_ERROR) {
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+				HAL_Delay(2000);
+				break; // Exit loop
+			}
+			HAL_Delay(1000);
+
+			// Connect to Server
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connecting", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"to server...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			exit = 1;
+			while(exit)
+			{
+				exit = Wifi_Connect();
+				Wifi_Process();
+			}
+
+			// Connected
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connected", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			HAL_Delay(1000);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Streaming...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			// Stream data
+			exit = 1;
+			while(exit)
+			{
+				if(g_Afe44xx_AdcRdy == 1)
+				{
+					g_Afe44xx_AdcRdy = 0;
+
+					final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+					final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+					data = (final1>>8)&0xFFFF;
+					Wifi_TxData((uint8_t*)&data, sizeof(data));
+					data = (final2>>8)&0xFFFF;
+					Wifi_TxData((uint8_t*)&data, sizeof(data));
+				}
+			}
+
+		}
+		else if(g_Buttons_MidPressEvent == 1) {
+			// Clear event
+			Buttons_ClearAllEvents();
+
+			// Config USB
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Configuring", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"USB port...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			MX_USB_DEVICE_Init();
+			Comm_Init();
+			HAL_Delay(2000);
+
+			// Wait for Start
+			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			while(!g_Buttons_MidPressEvent);
+
+			// Setup PPG
+			Buttons_ClearAllEvents();
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			s_POWER__PPG_EN_SET();
+			HAL_Delay(1000);
+			if(Afe44xx_SetUp() == s_ERROR) {
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+				HAL_Delay(2000);
+				break; // Exit loop
+			}
+			HAL_Delay(1000);
+
+			// Stream data
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Streaming...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			exit = 1;
+			while(exit)
+			{
+				if(g_Afe44xx_AdcRdy == 1)
+				{
+					g_Afe44xx_AdcRdy = 0;
+
+					final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+					final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+					data = (final1>>8)&0xFFFF;
+					Comm_TxData((uint8_t*)&data, sizeof(data));
+					data = (final2>>8)&0xFFFF;
+					Comm_TxData((uint8_t*)&data, sizeof(data));
+				}
+			}
+
+		}
+		else if(g_Buttons_BotPressEvent == 1) {
+			// Clear event
+			Buttons_ClearAllEvents();
+
+			// Config USB
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Configuring", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Bluetooth...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			Ble_Init();
+			HAL_Delay(2000);
+
+			// Wait for Start
+			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			while(!g_Buttons_MidPressEvent);
+
+			// Setup PPG
+			Buttons_ClearAllEvents();
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			s_POWER__PPG_EN_SET();
+			HAL_Delay(1000);
+			if(Afe44xx_SetUp() == s_ERROR) {
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+				HAL_Delay(2000);
+				break; // Exit loop
+			}
+			HAL_Delay(1000);
+
+			// Setup PPG and buffers
+			PPG_Init();
+			redBuf = ppgRedData;
+			irBuf = ppgIrData;
+			redSend = ppgRedData2;
+			irSend = ppgIrData2;
+			// Update timer
+			updateTimer = HAL_GetTick();
+			// Display GUI
+			Gui_UpdateValues(&graphObj, 0, 0, 0, 0);
+
+
+			exit = 1;
+			while(exit)
+			{
+				if(g_Afe44xx_AdcRdy == 1)
+				{
+					g_Afe44xx_AdcRdy = 0;
+
+					final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+					final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+					data = (final1>>8)&0xFFFF;
+					irBuf[ppgI] = data;
+					data = (final2>>8)&0xFFFF;
+					redBuf[ppgI] = data;
+
+					// Buffer signal for SpO2 calculation
+					PPG_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
+
+					ppgI = (ppgI + 1) % 32;
+
+					if(ppgI == 0)
+					{
+						// Activate sending
+						ppgSend = 1;
+						// switch buffers
+						if(ppgSwitch == 0) {
+							redBuf = ppgRedData2;
+							irBuf = ppgIrData2;
+							redSend = ppgRedData;
+							irSend = ppgIrData;
+							ppgSwitch = 1;
+						} else {
+							redBuf = ppgRedData;
+							irBuf = ppgIrData;
+							redSend = ppgRedData2;
+							irSend = ppgIrData2;
+							ppgSwitch = 0;
+						}
+
+						PPG_Filter(redSend, ppgRedFilt);
+						memcpy(redSend, ppgRedFilt, sizeof(ppgRedFilt));
+					}
+
+					if(ppgSend == 1) {
+
+						ppgPeak = PPG_DetectPeak(redSend[ppgI]);
+					}
+				}
+
+				if((HAL_GetTick() - updateTimer) > 500)
+				{
+					updateTimer = HAL_GetTick();
+					// Send BLE
+					Ble_SendPulse((uint8_t)g_Ppg_Pulse);
+					// Update GUI
+					Gui_UpdateValues(&graphObj, 1, g_Ppg_MaxPulsePercent, (uint8_t)g_Ppg_Pulse, (uint8_t)g_Ppg_SpO2);
+					SharpLcd_DisplayBuffer(graphObj.pBuf);
+				}
+				Ble_Process();
+
+			}
+
+		}
+	}
+
+	// Fatal error
+	Gui_DisplayCenterString(&graphObj, (uint8_t *)"Fatal Error.", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+	Gui_DisplayCenterString(&graphObj, (uint8_t *)"Please restart!", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+
+	// Turn everything off
+	s_POWER__WIFI_EN_RESET();
+	s_POWER__GPS_EN_RESET();
+	s_POWER__PPG_EN_RESET();
+
+	// END OF GAME
+	while(1)
+	{
+	}
+
+
+
+
+
+
+
+
+
+
+#ifdef s_BLUEOXI_MEMORY
+	// Init flash
+	uint8_t flashData[256];
+	FlashInfo_t flashInfo;
+	Flash_Init();
+	Flash_ReadInfo(&flashInfo);
+
+	// Erase
+	for(i = 0; i < s_MEMORY_BLOCKS; i++) {
+		Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
+	}
+#endif
+
+
+
+	uint8_t packet[5];
+	packet[0] = 0xA5;
+	packet[1] = 0;
+	packet[2] = 0;
+	packet[3] = 0;
+	packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
+
+	HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
+
+
+
+	HAL_Delay(1000);
+
+
+
+#ifdef s_BLUEOXI_MEMORY
+	Comm_Init();
+#endif
+
 
 
 
@@ -480,7 +591,7 @@ int main(void)
 
 
 
-	uint32_t bleSendTimer = HAL_GetTick();
+	//	uint32_t bleSendTimer = HAL_GetTick();
 
 	while (1)
 	{
@@ -549,29 +660,13 @@ int main(void)
 		}
 #endif
 
-#ifdef s_BLUEOXI_WIFI
-		// Check if ADC ready
-		if(g_Afe44xx_AdcRdy == 1 && g_Buttons_Event == 1)
-		{
-
-			g_Afe44xx_AdcRdy = 0;
-
-			final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
-			final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
-
-			data = (final1>>8)&0xFFFF;
-			Wifi_TxData((uint8_t*)&data, sizeof(data));
-			data = (final2>>8)&0xFFFF;
-			Wifi_TxData((uint8_t*)&data, sizeof(data));
-		}
-#endif
 
 
 #ifdef s_BLUEOXI_BLE
 		// BLE send pulse
-		if((HAL_GetTick() - bleSendTimer) > 500)
+		if((HAL_GetTick() - updateTimer) > 500)
 		{
-			bleSendTimer = HAL_GetTick();
+			updateTimer = HAL_GetTick();
 			//Ble_SendPulse((uint8_t)g_Ppg_Pulse);
 
 			if(g_Ble_UartTxReady == 1) {
@@ -658,109 +753,6 @@ int main(void)
 		}
 #endif
 
-		// WiFi Send
-		/*if(g_Wifi_UartTxReady == 1 && (
-				g_Wifi_AtAnswer == s_WIFI_AT__OK ||
-				g_Wifi_AtAnswer == s_WIFI_AT__CONNECTED ||
-				g_Wifi_AtAnswer == s_WIFI_AT__WAITING_DATA)) {
-
-			g_Wifi_UartTxReady = 0;
-			g_Wifi_AtAnswer = s_WIFI_AT__NONE;
-			HAL_Delay(500);
-
-			switch(wifi_state)
-			{
-			case 2 :
-				if(g_Wifi_Event != s_WIFI_EVENT__STATION_CONNECTED) {
-					HAL_Delay(1000);
-					g_Wifi_Event = s_WIFI_EVENT__NONE;
-					len = sprintf(str, s_WIFI__CONFIG_CWLIF);
-					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-				}
-				else {
-					WS2812B_SendColor(0,128,128);
-					len = sprintf(str, s_WIFI__CONFIG_CIPMODE);
-					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-					wifi_state++;
-				}
-				break;
-			case 3 :
-				if(g_Buttons_Event == 1) {
-					g_Buttons_Event = 0;
-					len = sprintf(str, s_WIFI__CONFIG_CIPSTART);
-					wifi_state++;
-					HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-				}
-				break;
-			case 4 :
-				len = sprintf(str, s_WIFI__CONFIG_CIPSEND);
-				wifi_state++;
-				HAL_UART_Transmit_IT(&g_Wifi_UartHandle, (uint8_t*)str, len);
-				break;
-			default :
-				break;
-			}
-		}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		//		HAL_Delay(500);
-		//		GPIOA->BSRR = GPIO_PIN_5;
-		//		HAL_Delay(100);
-		//		GPIOA->BSRR = GPIO_PIN_5 << 16;
-
-		// BLE Send
-		//		if(g_Ble_UartTxReady == 1) {
-		//			g_Ble_UartTxReady = 0;
-		//			len = sprintf(str, "%d\n", (int)count);
-		//			HAL_UART_Transmit_IT(&g_Ble_UartHandle, (uint8_t*)str, len);
-		//			count = (count+1) % 1000;
-		//		}
-
-		//		HAL_Delay(10);
-		//		if(g_Buttons_Event == 1) {
-		//			Comm_TxPacket();
-		//		}
-
-		// BLE Send
-		//		if(g_Ble_UartTxReady == 1) {
-		//			g_Ble_UartTxReady = 0;
-		//
-		//			packet[1] = 0;
-		//			packet[2] = count;
-		//			packet[4] = ((packet[0]+packet[1]+packet[2]+packet[3])^0xFF)+1;
-		//
-		//			HAL_UART_Transmit_IT(&g_Ble_UartHandle, packet, 5);
-		//			count = (count+1) % 100;
-		//		}
-		//
-		//		Ble_Process();
-
-		//len = sprintf(str, "%d\n", (int)count);
-		//CDC_Transmit_FS(str, len);
-		//count = (count+1) % 1000;
-
-		//WS2812B_SendBit(1);
-
-
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
 
 	}
 	/* USER CODE END 3 */

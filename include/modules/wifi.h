@@ -35,7 +35,8 @@
 
 
 
-#define s_WIFI__CMD_COUNT			6
+#define s_WIFI__CMD_COUNT			3
+#define s_WIFI__WAIT_COUNT			2
 
 
 /* -- Enumerations -- */
@@ -83,7 +84,11 @@ void Wifi_Deinit(void);
 void Wifi_ProcessRx(uint8_t Byte);
 void Wifi_Process(void);
 void Wifi_TxPacket(void);
-uint8_t Wifi_ProcessConnect(void);
+uint8_t Wifi_ProcessConnect(const uint8_t *const List[], const uint8_t Length[], const WifiAtAnswer_t Answer[],  const WifiEvent_t Event[], uint8_t Count);
+
+uint8_t Wifi_Connect(void);
+uint8_t Wifi_Wait(void);
+
 
 void Wifi_TxInit(void);
 void Wifi_TxData(uint8_t *Data, uint8_t Size);
