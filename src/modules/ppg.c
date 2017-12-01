@@ -72,7 +72,7 @@ float32_t g_Ppg_SpO2R = 0.5f;
  * @param void No arguments
  * @return void No return
  */
-void PPG_Init(void)
+void Ppg_Init(void)
 {
 	// Init FIR
 	arm_fir_init_f32(&g_Ppg_FirInst, s_PPG__FIR_NUM_TAPS, (float32_t *)&s_PPPG_FIR_COEFFS[0], &g_Ppg_FirState[0], s_PPG__FIR_BLOCK_SIZE);
@@ -83,14 +83,14 @@ void PPG_Init(void)
  * @param void No arguments
  * @return void No return
  */
-void PPG_Deinit(void)
+void Ppg_Deinit(void)
 {
 
 }
 
 
 
-void PPG_Filter(uint16_t *Input, uint16_t *Output)
+void Ppg_Filter(uint16_t *Input, uint16_t *Output)
 {
 	uint8_t i;
 	float32_t input[s_PPG__FIR_BLOCK_SIZE], output[s_PPG__FIR_BLOCK_SIZE];
@@ -106,7 +106,7 @@ void PPG_Filter(uint16_t *Input, uint16_t *Output)
 	}
 }
 
-uint16_t PPG_DetectPeak(uint16_t Input)
+uint16_t Ppg_DetectPeak(uint16_t Input)
 {
 	static uint8_t delay = 0;
 	static uint16_t time = 0;
@@ -143,19 +143,19 @@ uint16_t PPG_DetectPeak(uint16_t Input)
 
 	if(index == s_PPG__PEAK_K)
 	{
-		PPG_CalcPulse(time);
+		Ppg_CalcPulse(time);
 		time = 0;
 
 		delay = s_PPG__PEAK_DELAY;
 		//return g_Ppg_Pulse + 10;
-		return (uint16_t)g_Ppg_PeakVector[s_PPG__PEAK_K] + 200;
+		return (uint16_t)g_Ppg_PeakVector[s_PPG__PEAK_K] + 50;
 	}
 
 	//return g_Ppg_Pulse;
 	return (uint16_t)g_Ppg_PeakVector[s_PPG__PEAK_K];
 }
 
-void PPG_CalcPulse(uint16_t Time)
+void Ppg_CalcPulse(uint16_t Time)
 {
 	uint8_t i;
 	float32_t temp, pulse;
@@ -179,12 +179,12 @@ void PPG_CalcPulse(uint16_t Time)
 	g_Ppg_MaxPulsePercent = (g_Ppg_Pulse*100) / s_PPG__MAX_PULSE;
 
 
-	PPG_CalcSat();
+	Ppg_CalcSat();
 }
 
 
 
-void PPG_BufferSignal(uint16_t RedData, uint16_t IrData)
+void Ppg_BufferSignal(uint16_t RedData, uint16_t IrData)
 {
 
 	g_Ppg_SpO2RedBuf[g_Ppg_SpO2RedBufI] = RedData;
@@ -196,7 +196,7 @@ void PPG_BufferSignal(uint16_t RedData, uint16_t IrData)
 
 
 
-void PPG_CalcSat()
+void Ppg_CalcSat(void)
 {
 	uint32_t i;
 	uint16_t maxRed=0;
@@ -227,7 +227,7 @@ void PPG_CalcSat()
 	dcRed = maxRed;
 	acIr = maxIr - minIr;
 	dcIr = maxIr;
-	g_Ppg_SpO2R = 0.5f * g_Ppg_SpO2R + 0.5f * (acRed/dcRed) / (acIr/dcIr);
+	g_Ppg_SpO2R = 0.8f * g_Ppg_SpO2R + 0.2f * (acRed/dcRed) / (acIr/dcIr);
 
 	g_Ppg_SpO2 = (uint16_t)(112.0f - 24.0f * g_Ppg_SpO2R);
 }

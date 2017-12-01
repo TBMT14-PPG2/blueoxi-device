@@ -40,7 +40,7 @@
 #define s_BLUEOXI_BLE		1
 
 
-#define s_MEMORY_BLOCKS		40
+#define s_MEMORY_BLOCKS		2//40
 
 /* USER CODE BEGIN Includes */
 
@@ -200,6 +200,7 @@ int main(void)
 	uint16_t data;
 	uint8_t str[32];
 	uint8_t chargingStatus = 0;
+	uint8_t stream = 0;
 
 
 	// PPG
@@ -212,7 +213,20 @@ int main(void)
 
 	uint16_t 	ppgPeak;
 
+	// MEMORY BUFFERS AND STUFF
+	uint8_t flashData[256];
+	FlashInfo_t flashInfo;
+	uint8_t		memI = 0, memSend = 0, memSwitch = 0;
+	uint16_t	*memBuf, *memBuf2;
+	uint16_t	memData[128], memData2[128];
+	uint32_t	memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+	uint8_t		memSendBuff[32];
+
+
+
 	uint32_t updateTimer;
+
+	uint8_t menuOption = 0;
 
 
 	/* MCU Configuration----------------------------------------------------------*/
@@ -265,82 +279,49 @@ int main(void)
 	while(1)
 	{
 
-		// Check battery
-		if((HAL_GetTick() - updateTimer) > 10000) {
-			updateTimer = HAL_GetTick();
+		menuOption = Gui_DisplayMainMenu(&graphObj);
 
-			// Check charging
-			if(s_POWER__CHARGE_STAT_ISSET()) {
-				chargingStatus = 0;
-			}
-			else {
-				chargingStatus = 1;
-			}
 
-			// Update menu
-			Gui_DisplayMenu(&graphObj, Power_BateryLevel(), chargingStatus);
-
-		}
+		//		// Check battery
+		//		if((HAL_GetTick() - updateTimer) > 10000) {
+		//			updateTimer = HAL_GetTick();
+		//
+		//			// Check charging
+		//			if(s_POWER__CHARGE_STAT_ISSET()) {
+		//				chargingStatus = 0;
+		//			}
+		//			else {
+		//				chargingStatus = 1;
+		//			}
+		//
+		//			// Update menu
+		//			Gui_DisplayMenu(&graphObj, Power_BateryLevel(), chargingStatus);
+		//
+		//		}
 
 		// Check all the buttons
-		if(g_Buttons_TopPressEvent == 1) {
-			// Clear event
-			Buttons_ClearAllEvents();
+		if(menuOption == 0) {
+			//		if(g_Buttons_TopPressEvent == 1) {
+			//			// Clear event
+			//			Buttons_ClearAllEvents();
 
-			// Turn on Wifi
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Booting WiFi...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
-			s_POWER__WIFI_EN_SET();
-			HAL_Delay(3000);
-			Wifi_Init();
-			Wifi_TxInit();
-			HAL_Delay(1000);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connect to:", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"\"blueoxi_wifi\"", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-
-			// Wait for Client
-			exit = 1;
-			while(exit)
-			{
-				exit = Wifi_Wait();
-				Wifi_Process();
-			}
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Client", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connected.", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			HAL_Delay(2000);
+			// Init Wifi
+			Gui_InitWifi(&graphObj);
 
 			// Wait for Start
 			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
 			while(!g_Buttons_MidPressEvent);
 
-			// Setup PPG
-			Buttons_ClearAllEvents();
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			s_POWER__PPG_EN_SET();
-			HAL_Delay(1000);
-			if(Afe44xx_SetUp() == s_ERROR) {
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-				HAL_Delay(2000);
-				break; // Exit loop
-			}
-			HAL_Delay(1000);
-
-			// Connect to Server
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connecting", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"to server...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			exit = 1;
-			while(exit)
-			{
-				exit = Wifi_Connect();
-				Wifi_Process();
+			// Init PPG sensor
+			if(Gui_InitPpg(&graphObj) == s_ERROR) {
+				break;
 			}
 
-			// Connected
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Connected", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
-			HAL_Delay(1000);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Streaming...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			// Connect to server
+			Gui_ConnectWifi(&graphObj);
+
 			// Stream data
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Streaming...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
 			exit = 1;
 			while(exit)
 			{
@@ -359,34 +340,22 @@ int main(void)
 			}
 
 		}
-		else if(g_Buttons_MidPressEvent == 1) {
-			// Clear event
-			Buttons_ClearAllEvents();
+		else if(menuOption == 1) {
+			//		else if(g_Buttons_MidPressEvent == 1) {
+			//			// Clear event
+			//			Buttons_ClearAllEvents();
 
-			// Config USB
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Configuring", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"USB port...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			MX_USB_DEVICE_Init();
-			Comm_Init();
-			HAL_Delay(2000);
+			// Init USB
+			Gui_InitUsb(&graphObj);
 
 			// Wait for Start
 			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
 			while(!g_Buttons_MidPressEvent);
 
-			// Setup PPG
-			Buttons_ClearAllEvents();
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			s_POWER__PPG_EN_SET();
-			HAL_Delay(1000);
-			if(Afe44xx_SetUp() == s_ERROR) {
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-				HAL_Delay(2000);
-				break; // Exit loop
+			// Init PPG sensor
+			if(Gui_InitPpg(&graphObj) == s_ERROR) {
+				break;
 			}
-			HAL_Delay(1000);
 
 			// Stream data
 			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Streaming...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
@@ -408,36 +377,42 @@ int main(void)
 			}
 
 		}
-		else if(g_Buttons_BotPressEvent == 1) {
+		else if(menuOption == 2) {
+			//		else if(g_Buttons_BotPressEvent == 1) {
 			// Clear event
-			Buttons_ClearAllEvents();
+			//			Buttons_ClearAllEvents();
 
-			// Config USB
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Configuring", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Bluetooth...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			Ble_Init();
-			HAL_Delay(2000);
+			// Ask if streaming is required
+			stream = Gui_DisplayStreamMenu(&graphObj);
+
+			// Init BLE
+			Gui_InitBle(&graphObj);
+
+			// Init Wifi
+			if(stream == 1) {
+				Gui_InitWifi(&graphObj);
+			}
+			// Init USB
+			else if(stream == 2) {
+				Gui_InitUsb(&graphObj);
+			}
 
 			// Wait for Start
 			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
 			while(!g_Buttons_MidPressEvent);
 
-			// Setup PPG
-			Buttons_ClearAllEvents();
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-			Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-			s_POWER__PPG_EN_SET();
-			HAL_Delay(1000);
-			if(Afe44xx_SetUp() == s_ERROR) {
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"PPG sensor", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
-				Gui_DisplayCenterString(&graphObj, (uint8_t *)"has error :(", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
-				HAL_Delay(2000);
-				break; // Exit loop
+			// Init PPG sensor
+			if(Gui_InitPpg(&graphObj) == s_ERROR) {
+				break;
 			}
-			HAL_Delay(1000);
+
+			// Connect to server
+			if(stream == 1) {
+				Gui_ConnectWifi(&graphObj);
+			}
 
 			// Setup PPG and buffers
-			PPG_Init();
+			Ppg_Init();
 			redBuf = ppgRedData;
 			irBuf = ppgIrData;
 			redSend = ppgRedData2;
@@ -464,7 +439,7 @@ int main(void)
 					redBuf[ppgI] = data;
 
 					// Buffer signal for SpO2 calculation
-					PPG_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
+					Ppg_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
 
 					ppgI = (ppgI + 1) % 32;
 
@@ -487,13 +462,26 @@ int main(void)
 							ppgSwitch = 0;
 						}
 
-						PPG_Filter(redSend, ppgRedFilt);
+						Ppg_Filter(redSend, ppgRedFilt);
 						memcpy(redSend, ppgRedFilt, sizeof(ppgRedFilt));
 					}
 
 					if(ppgSend == 1) {
 
-						ppgPeak = PPG_DetectPeak(redSend[ppgI]);
+						ppgPeak = Ppg_DetectPeak(redSend[ppgI]);
+
+						// Stream Wifi
+						if(stream == 1) {
+							Wifi_TxData((uint8_t*)&ppgPeak, sizeof(data));
+							//Comm_TxData((uint8_t*)&redSend[ppgI], sizeof(data));
+							Wifi_TxData((uint8_t*)&irSend[ppgI], sizeof(data));
+						}
+						// Stream USB
+						else if(stream == 2) {
+							Comm_TxData((uint8_t*)&ppgPeak, sizeof(data));
+							//Comm_TxData((uint8_t*)&redSend[ppgI], sizeof(data));
+							Comm_TxData((uint8_t*)&irSend[ppgI], sizeof(data));
+						}
 					}
 				}
 
@@ -508,6 +496,191 @@ int main(void)
 				}
 				Ble_Process();
 
+			}
+
+		}
+		else if(menuOption == 3) {
+			// Ask if streaming is required
+			stream = Gui_DisplayStreamMenu(&graphObj);
+
+
+			// Init Flash
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Flash...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			Flash_Init();
+			Flash_ReadInfo(&flashInfo);
+			memBuf = memData;
+			memBuf2 = memData2;
+			HAL_Delay(1000);
+
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Erasing...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			// Erase
+			for(i = 0; i < s_MEMORY_BLOCKS; i++) {
+				Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
+			}
+			HAL_Delay(1000);
+
+
+			// Init Wifi
+			if(stream == 1) {
+				Gui_InitWifi(&graphObj);
+			}
+			// Init USB
+			else if(stream == 2) {
+				Gui_InitUsb(&graphObj);
+			}
+
+			// Wait for Start
+			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			while(!g_Buttons_MidPressEvent);
+
+			// Init PPG sensor
+			if(Gui_InitPpg(&graphObj) == s_ERROR) {
+				break;
+			}
+
+			// Connect to server
+			if(stream == 1) {
+				Gui_ConnectWifi(&graphObj);
+			}
+
+			// Record data
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Recording...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			exit = 1;
+			while(exit)
+			{
+				if(g_Afe44xx_AdcRdy == 1 && g_Buttons_Event == 1)
+				{
+					g_Afe44xx_AdcRdy = 0;
+
+					final2 = Afe44xx_ReadRegister(s_AFE44XX__LED2_ALED2VAL);
+					final1 = Afe44xx_ReadRegister(s_AFE44XX__LED1_ALED1VAL);
+
+					data = (final1>>8)&0xFFFF;
+					memBuf[memI++] = data;
+					data = (final2>>8)&0xFFFF;
+					memBuf[memI] = data;
+
+					if(memSend == 2)
+					{
+						//						// Stream Wifi
+						//						if(stream == 1) {
+						//							Wifi_TxData((uint8_t*)&memBuf[memI-1], sizeof(data));
+						//							Wifi_TxData((uint8_t*)&memBuf[memI], sizeof(data));
+						//						}
+						//						// Stream USB
+						//						else if(stream == 2) {
+						//							Comm_TxData((uint8_t*)&memBuf[memI-1], sizeof(data));
+						//							Comm_TxData((uint8_t*)&memBuf[memI], sizeof(data));
+						//						}
+					}
+
+					memI = (memI + 1) % 128;
+
+					if(memI == 0 && memSend == 0)
+					{
+						// Save to memory
+						Flash_Program(memAddr, (uint8_t*)memBuf, 256);
+						memAddr += 256;
+
+						if(memAddr > (s_FLASH__PARAMETER_BLOCK_SIZE + 65536 * s_MEMORY_BLOCKS))
+						{
+							memSend = 1;
+							memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+
+							Gui_DisplayCenterString(&graphObj, (uint8_t *)"Sending...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+						}
+					}
+
+					if(memSend == 1)
+					{
+						Flash_Read(memAddr, memSendBuff, 4);
+						memAddr += 4;
+
+						// Stream Wifi
+						if(stream == 1) {
+							Wifi_TxData(&memSendBuff[0], 2);
+							Wifi_TxData(&memSendBuff[2], 2);
+						}
+						// Stream USB
+						else if(stream == 2) {
+							Comm_TxData(&memSendBuff[0], 2);
+							Comm_TxData(&memSendBuff[2], 2);
+						}
+
+
+						if(memAddr > (s_FLASH__PARAMETER_BLOCK_SIZE + 65536 * s_MEMORY_BLOCKS))
+						{
+							memSend = 2;
+						}
+					}
+				}
+			}
+		}
+		if(menuOption == 4) {
+			// Ask if streaming is required
+			stream = Gui_DisplayStreamMenu(&graphObj);
+
+
+			// Init Flash
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Setting up", 2, 1, s_GUI_DISPLAY_OPT__CLEAR);
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Flash...", 2, 2, s_GUI_DISPLAY_OPT__DISPLAY);
+			Flash_Init();
+			Flash_ReadInfo(&flashInfo);
+			memBuf = memData;
+			memBuf2 = memData2;
+			HAL_Delay(1000);
+
+			// Init Wifi
+			if(stream == 1) {
+				Gui_InitWifi(&graphObj);
+			}
+			// Init USB
+			else if(stream == 2) {
+				Gui_InitUsb(&graphObj);
+			}
+
+			// Wait for Start
+			Gui_DisplayButtonPrompt(&graphObj, (uint8_t *)"Start!", s_GUI_BUTTONS__MID, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+			while(!g_Buttons_MidPressEvent);
+
+			// Connect to server
+			if(stream == 1) {
+				Gui_ConnectWifi(&graphObj);
+			}
+
+			// Send
+			memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+			Gui_DisplayCenterString(&graphObj, (uint8_t *)"Sending...", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+
+			exit = 1;
+			memSend = 1;
+			while(exit)
+			{
+				HAL_Delay(1);
+				if(memSend == 1)
+				{
+					Flash_Read(memAddr, memSendBuff, 4);
+					memAddr += 4;
+
+					// Stream Wifi
+					if(stream == 1) {
+						Wifi_TxData(&memSendBuff[0], 2);
+						Wifi_TxData(&memSendBuff[2], 2);
+					}
+					// Stream USB
+					else if(stream == 2) {
+						Comm_TxData(&memSendBuff[0], 2);
+						Comm_TxData(&memSendBuff[2], 2);
+					}
+
+
+					if(memAddr > (s_FLASH__PARAMETER_BLOCK_SIZE + 65536 * s_MEMORY_BLOCKS))
+					{
+						memSend = 2;
+						Gui_DisplayCenterString(&graphObj, (uint8_t *)"Done.", 1, 1, s_GUI_DISPLAY_OPT__CLEAR_DISPLAY);
+					}
+				}
 			}
 
 		}
@@ -536,18 +709,18 @@ int main(void)
 
 
 
-#ifdef s_BLUEOXI_MEMORY
-	// Init flash
-	uint8_t flashData[256];
-	FlashInfo_t flashInfo;
-	Flash_Init();
-	Flash_ReadInfo(&flashInfo);
-
-	// Erase
-	for(i = 0; i < s_MEMORY_BLOCKS; i++) {
-		Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
-	}
-#endif
+	//#ifdef s_BLUEOXI_MEMORY
+	//	// Init flash
+	//	uint8_t flashData[256];
+	//	FlashInfo_t flashInfo;
+	//	Flash_Init();
+	//	Flash_ReadInfo(&flashInfo);
+	//
+	//	// Erase
+	//	for(i = 0; i < s_MEMORY_BLOCKS; i++) {
+	//		Flash_EraseSector(s_FLASH__PARAMETER_SECTOR_COUNT + i);
+	//	}
+	//#endif
 
 
 
@@ -574,12 +747,12 @@ int main(void)
 
 
 
-	// MEMORY BUFFERS AND STUFF
-	uint8_t		memI = 0, memSend = 0, memSwitch = 0;
-	uint16_t	*memBuf, *memBuf2;
-	uint16_t	memData[128], memData2[128];
-	uint32_t	memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
-	uint8_t		memSendBuff[32];
+	//	// MEMORY BUFFERS AND STUFF
+	//	uint8_t		memI = 0, memSend = 0, memSwitch = 0;
+	//	uint16_t	*memBuf, *memBuf2;
+	//	uint16_t	memData[128], memData2[128];
+	//	uint32_t	memAddr = s_FLASH__PARAMETER_BLOCK_SIZE;
+	//	uint8_t		memSendBuff[32];
 
 	memBuf = memData;
 	memBuf2 = memData2;
@@ -620,7 +793,7 @@ int main(void)
 			//irBuf[ppgI] = ppgCount++;
 
 			// Buffer signal for SpO2 calculation
-			PPG_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
+			Ppg_BufferSignal(redBuf[ppgI], irBuf[ppgI]);
 
 			ppgI = (ppgI + 1) % 32;
 
@@ -643,14 +816,14 @@ int main(void)
 					ppgSwitch = 0;
 				}
 
-				PPG_Filter(redSend, ppgRedFilt);
+				Ppg_Filter(redSend, ppgRedFilt);
 				memcpy(redSend, ppgRedFilt, sizeof(ppgRedFilt));
 			}
 
 
 			if(ppgSend == 1) {
 
-				ppgPeak = PPG_DetectPeak(redSend[ppgI]);
+				ppgPeak = Ppg_DetectPeak(redSend[ppgI]);
 
 				Comm_TxData((uint8_t*)&ppgPeak, sizeof(data));
 				//Comm_TxData((uint8_t*)&g_Ppg_SpO2, sizeof(data));

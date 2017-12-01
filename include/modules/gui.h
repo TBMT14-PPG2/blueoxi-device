@@ -55,4 +55,19 @@ void Gui_DisplayMenu(GraphicsObj_t *GraphicsObj, uint32_t Battery, uint8_t Charg
 void Gui_DisplayCenterString(GraphicsObj_t *GraphicsObj, const uint8_t *String, uint8_t Lines, uint8_t Line, GuiDisplayOpt_t Opt);
 void Gui_DisplayButtonPrompt(GraphicsObj_t *GraphicsObj, const uint8_t *String, GuiButtons_t Button, GuiDisplayOpt_t Opt);
 
+
+
+
+
+void Gui_InitWifi(GraphicsObj_t *GraphicsObj);
+void Gui_ConnectWifi(GraphicsObj_t *GraphicsObj);
+void Gui_InitUsb(GraphicsObj_t *GraphicsObj);
+void Gui_InitBle(GraphicsObj_t *GraphicsObj);
+Error_t Gui_InitPpg(GraphicsObj_t *GraphicsObj);
+
+uint8_t Gui_DisplayStreamMenu(GraphicsObj_t *GraphicsObj);
+
+uint8_t Gui_DisplayMainMenu(GraphicsObj_t *GraphicsObj);
+
+
 #endif /* __GUI_H */

@@ -31,10 +31,11 @@ extern uint16_t g_Ppg_SpO2;
 
 void Ppg_Init(void);
 void Ppg_Deinit(void);
-void PPG_Filter(uint16_t *Input, uint16_t *Output);
-void PPG_CalcPulse(uint16_t Time);
-
-void PPG_BufferSignal(uint16_t RedData, uint16_t IrData);
+void Ppg_Filter(uint16_t *Input, uint16_t *Output);
+uint16_t Ppg_DetectPeak(uint16_t Input);
+void Ppg_CalcPulse(uint16_t Time);
+void Ppg_CalcSat(void);
+void Ppg_BufferSignal(uint16_t RedData, uint16_t IrData);
 
 
 
